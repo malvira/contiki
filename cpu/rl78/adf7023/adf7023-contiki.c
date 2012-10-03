@@ -1,0 +1,121 @@
+
+#include <string.h>          // for memcpy().
+
+#include "radio.h"
+
+#include "ADF7023.h"
+#include "adf7023-contiki.h"
+#include "contiki.h"         // for LED definitions.
+
+
+#define ADF7023_MAX_PACKET_SIZE 255
+
+
+static unsigned char tx_buf[ADF7023_MAX_PACKET_SIZE];
+static unsigned char rx_buf[ADF7023_MAX_PACKET_SIZE];
+
+const struct radio_driver adf7023_driver = {
+
+	.init = adf7023_init,
+	
+	/** Prepare the radio with a packet to be sent. */
+	.prepare = adf7023_prepare,
+
+	/** Send the packet that has previously been prepared. */
+	.transmit = adf7023_transmit,
+
+	/** Prepare & transmit a packet. */
+	.send = adf7023_send,
+
+	/** Read a received packet into a buffer. */
+	.read = adf7023_read,
+
+	/** Perform a Clear-Channel Assessment (CCA) to find out if there is
+	a packet in the air or not. */
+	.channel_clear = adf7023_channel_clear,
+
+	/** Check if the radio driver is currently receiving a packet */
+	.receiving_packet = adf7023_receiving_packet,
+
+	/** Check if the radio driver has just received a packet */
+	.pending_packet = adf7023_pending_packet,
+
+	/** Turn the radio on. */
+	.on = adf7023_on,
+
+	/** Turn the radio off. */
+	.off = adf7023_off,
+};
+
+int adf7023_init(void) {
+	ADF7023_Init();
+	return 1;
+}
+
+int adf7023_prepare(const void *payload, unsigned short payload_len) {
+	// Prepare the radio with a packet to be sent.
+	memcpy(tx_buf, payload, (payload_len <= sizeof(tx_buf))? payload_len : sizeof(tx_buf));
+	return 0;
+}
+
+int adf7023_transmit(unsigned short transmit_len) {
+	// Send the packet that has previously been prepared.
+
+	RADIO_TX_LED = 1;
+	ADF7023_TransmitPacket(tx_buf, transmit_len);
+	RADIO_TX_LED = 0;
+
+	// TODO: Error conditions (RADIO_TX_ERR, RADIO_TX_COLLISION, RADIO_TX_NOACK)?
+	return RADIO_TX_OK;
+}
+
+
+
+
+int adf7023_send(const void *payload, unsigned short payload_len) {
+	// Prepare & transmit a packet.
+
+	RADIO_TX_LED = 1;
+	ADF7023_TransmitPacket((void*)payload, payload_len);
+	RADIO_TX_LED = 0;
+
+	// TODO: Error conditions (RADIO_TX_ERR, RADIO_TX_COLLISION, RADIO_TX_NOACK)?
+	return RADIO_TX_OK;
+}
+
+int adf7023_read(void *buf, unsigned short buf_len) {
+	unsigned char num_bytes;
+	// Read a received packet into a buffer.
+
+	RADIO_RX_LED = 1;
+	ADF7023_ReceivePacket(rx_buf, &num_bytes);
+	RADIO_RX_LED = 0;
+
+	memcpy(buf, rx_buf, (num_bytes <= buf_len)? num_bytes : buf_len);
+	return num_bytes;
+}
+
+int adf7023_channel_clear(void) {
+	// Perform a Clear-Channel Assessment (CCA) to find out if there is a packet in the air or not.
+	return 1;
+}
+
+int adf7023_receiving_packet(void) {
+  // Check if the radio driver is currently receiving a packet.
+	return 0;
+}
+
+int adf7023_pending_packet(void) {
+  // Check if the radio driver has just received a packet.
+	return ADF7023_ReceivePacketAvailable();
+}
+
+int adf7023_on(void) {
+	// Turn the radio on.
+  return 1;
+}
+
+int adf7023_off(void) {
+	// Turn the radio off.
+  return 0;
+}
