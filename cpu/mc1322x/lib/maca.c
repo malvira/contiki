@@ -412,6 +412,7 @@ volatile packet_t* rx_packet(void) {
 }
 
 void post_tx(void) {
+	uint32_t clk;
 	/* set dma tx pointer to the payload */
 	/* and set the tx len */
 	disable_irq(MACA);
@@ -434,10 +435,17 @@ void post_tx(void) {
 	BOUND_CHECK(dma_rx);
 	BOUND_CHECK(dma_tx);
 	*MACA_DMARX = (uint32_t)&(dma_rx->data[0]);
-	/* disable soft timeout clock */
-	/* disable start clock */
-	*MACA_TMRDIS = (1 << maca_tmren_sft) | ( 1<< maca_tmren_cpl) | ( 1 << maca_tmren_strt ) ;
-	
+
+	clk = *MACA_CLK;
+	if(dma_tx->tx_time > clk + 2) {
+		/* disable soft timeout clock */
+		/* disable start clock */
+		*MACA_TMRDIS = (1 << maca_tmren_sft) | ( 1<< maca_tmren_cpl) | ( 1 << maca_tmren_strt ) ;
+	} else {
+		*MACA_STARTCLK = dma_tx->tx_time;
+		*MACA_TMRDIS = (1 << maca_tmren_sft) | ( 1<< maca_tmren_cpl) ;
+	}
+
         /* set complete clock to long value */
 	/* acts like a watchdog in case the MACA locks up */
 	*MACA_CPLCLK = *MACA_CLK + CPL_TIMEOUT;
@@ -445,11 +453,18 @@ void post_tx(void) {
 	*MACA_TMREN = (1 << maca_tmren_cpl);
 	
 	enable_irq(MACA);
-	*MACA_CONTROL = ( ( 4 << PRECOUNT) |
-			  ( prm_mode << PRM) |
-			  (maca_ctrl_mode_no_cca << maca_ctrl_mode) |
-			  (1 << maca_ctrl_asap) |
-			  (maca_ctrl_seq_tx));	
+	if(dma_tx->tx_time > clk + 2) {
+		*MACA_CONTROL = ( ( 4 << PRECOUNT) |
+				  ( prm_mode << PRM) |
+				  (maca_ctrl_mode_no_cca << maca_ctrl_mode) |
+				  (1 << maca_ctrl_asap) |
+				  (maca_ctrl_seq_tx));	
+	} else {
+		*MACA_CONTROL = ( ( 4 << PRECOUNT) |
+				  ( prm_mode << PRM) |
+				  (maca_ctrl_mode_no_cca << maca_ctrl_mode) |
+				  (maca_ctrl_seq_tx));	
+	}
 	/* status bit 10 is set immediately */
         /* then 11, 10, and 9 get set */ 
         /* they are cleared once we get back to maca_isr */ 
@@ -467,11 +482,26 @@ void tx_packet(volatile packet_t *p) {
 		tx_end->left = 0; tx_end->right = 0;
 		tx_head = tx_end; 
 	} else {
-		/* add p to the end of the queue */
-		tx_end->left = p;
-		p->right = tx_end;
-		/* move the queue */
-		tx_end = p; tx_end->left = 0;
+		volatile packet_t *this, *next;		
+		uint32_t now;
+		/* insert into queue according to tx_time */
+		this = tx_head;
+		now = *MACA_CLK;
+		while ((this != tx_end) || (this->tx_time - now) > (p->tx_time - now)) { this = this->left; }
+		if (this == tx_end) {
+			/* add p to the end of the queue */
+			tx_end->left = p;
+			p->right = tx_end;
+			/* move the queue */
+			tx_end = p; tx_end->left = 0;
+		} else {
+			/* insert p */
+			next = this->left;
+			this->left = p;
+			p->left = next;
+			next->right = p;
+			p->right = this;
+		}
 	}
 //	print_packets("tx packet");
 	irq_restore();

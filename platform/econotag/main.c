@@ -64,6 +64,12 @@ int main(void) {
 
 	/* m12_init() flips the mux switch */
 
+	/* turn on RX and TX led */
+	GPIO->PAD_DIR.TXON = 1;
+	GPIO->FUNC_SEL.TXON = 1;
+//	GPIO->PAD_DIR.RXON = 1;
+//	GPIO->FUNC_SEL.RXON = 1;
+
 	/* trims the main crystal load capacitance */
 	if (!FORCE_ECONOTAG_I && CRM->SYS_CNTLbits.XTAL32_EXISTS) {
 		/* M12 based econotag */
@@ -133,7 +139,6 @@ int main(void) {
 
 	/* Main scheduler loop */
 	while(1) {
-		check_maca();
 
 		if(uart1_input_handler != NULL) {
 			if(uart1_can_get()) {
