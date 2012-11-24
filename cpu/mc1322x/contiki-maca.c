@@ -46,6 +46,7 @@
 #include "sys/process.h"
 #include "net/packetbuf.h"
 #include "net/netstack.h"
+#include "net/mac/frame802154.h"
 
 #include "contiki-conf.h"
 
@@ -189,6 +190,12 @@ int contiki_maca_read(void *buf, unsigned short bufsize) {
 		p->length -= 1;
 		p->offset += 1;
 #endif
+		/* handle beacons */
+		if( p->data[1] == FRAME802154_BEACONFRAME ) {
+			ANNOTATE("got a beacon: %08x\n\r", p->rx_time);
+			return 0;
+		} 
+
 		PRINTF(": p->length 0x%0x bufsize 0x%0x \n\r", p->length, bufsize);
 		if((p->length) < bufsize) bufsize = (p->length);
 		memcpy(buf, (uint8_t *)(p->data + p->offset), bufsize);

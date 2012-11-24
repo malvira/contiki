@@ -194,7 +194,7 @@ void mc1322x_init(void) {
 	set_power(mc1322x_config.power);
 	set_channel(mc1322x_config.channel);
 	set_demodulator_type(mc1322x_config.flags.demod);
-	set_prm_mode(mc1322x_config.flags.autoack);
+//	set_prm_mode(mc1322x_config.flags.autoack);
 
 
 }
