@@ -371,7 +371,11 @@ void post_receive(void) {
 	BOUND_CHECK(dma_tx);
 	*MACA_DMARX = (uint32_t)&(dma_rx->data[0]);
 	/* with timeout */		
-	*MACA_SFTCLK = *MACA_CLK + RECV_SOFTIMEOUT; /* soft timeout */ 
+	if(tx_head == 0) {
+		*MACA_SFTCLK = *MACA_CLK + RECV_SOFTIMEOUT; /* soft timeout */ 
+	} else {
+		*MACA_SFTCLK = tx_head->tx_time - 128;
+	}
 	*MACA_TMREN = (1 << maca_tmren_sft);
 	/* start the receive sequence */
 	*MACA_CONTROL = ( (1 << maca_ctrl_asap) | 
@@ -487,7 +491,10 @@ void tx_packet(volatile packet_t *p) {
 		/* insert into queue according to tx_time */
 		this = tx_head;
 		now = *MACA_CLK;
-		while ((this != tx_end) || (this->tx_time - now) > (p->tx_time - now)) { this = this->left; }
+		while ((this != 0) && (this != tx_end) && (this->tx_time - now) > (p->tx_time - now)) 
+		{ 
+			this = this->left; 
+		}
 		if (this == tx_end) {
 			/* add p to the end of the queue */
 			tx_end->left = p;
@@ -758,8 +765,14 @@ void maca_isr(void) {
 	if (*MACA_IRQ != 0)
 	{ PRINTF("*MACA_IRQ %x\n\r", (unsigned int)*MACA_IRQ); }
 
-	if(tx_head != 0) {
-		post_tx();
+	if(tx_head != 0 && tx_head->tx_time ) {
+		int32_t d_next_tx;
+		d_next_tx = tx_head->tx_time - *MACA_CLK;
+		if(d_next_tx < 128) {
+			post_tx();
+		} else {
+			post_receive();
+		}
 	} else {
 		post_receive();
 	} 
