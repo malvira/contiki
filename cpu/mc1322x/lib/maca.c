@@ -437,34 +437,34 @@ void post_tx(void) {
 	*MACA_DMARX = (uint32_t)&(dma_rx->data[0]);
 
 	clk = *MACA_CLK;
-	if(dma_tx->tx_time > clk + 2) {
-		/* disable soft timeout clock */
-		/* disable start clock */
-		*MACA_TMRDIS = (1 << maca_tmren_sft) | ( 1<< maca_tmren_cpl) | ( 1 << maca_tmren_strt ) ;
+	/* disable maca timers */
+	*MACA_TMRDIS = (1 << maca_tmren_sft) | ( 1<< maca_tmren_cpl) | ( 1 << maca_tmren_strt ) ;
+
+	if(!(dma_tx->tx_time > clk + 2)) {
+		/* set complete clock to long value */
+		/* acts like a watchdog in case the MACA locks up */
+		*MACA_CPLCLK = clk + CPL_TIMEOUT;
+		*MACA_TMREN = (1 << maca_tmren_cpl);
 	} else {
 		*MACA_STARTCLK = dma_tx->tx_time;
-		*MACA_TMRDIS = (1 << maca_tmren_sft) | ( 1<< maca_tmren_cpl) ;
+		*MACA_CPLCLK = dma_tx->tx_time + CPL_TIMEOUT;
+		*MACA_TMREN = (1 << maca_tmren_cpl) | ( 1<< maca_tmren_strt);
 	}
-
-        /* set complete clock to long value */
-	/* acts like a watchdog in case the MACA locks up */
-	*MACA_CPLCLK = *MACA_CLK + CPL_TIMEOUT;
-	/* enable complete clock */
-	*MACA_TMREN = (1 << maca_tmren_cpl);
+	
 	
 	enable_irq(MACA);
-	if(dma_tx->tx_time > clk + 2) {
+	if(!(dma_tx->tx_time > clk + 2)) {
 		*MACA_CONTROL = ( ( 4 << PRECOUNT) |
 				  ( prm_mode << PRM) |
 				  (maca_ctrl_mode_no_cca << maca_ctrl_mode) |
 				  (1 << maca_ctrl_asap) |
-				  (maca_ctrl_seq_tx));	
+				  (maca_ctrl_seq_tx));
 	} else {
 		*MACA_CONTROL = ( ( 4 << PRECOUNT) |
 				  ( prm_mode << PRM) |
 				  (maca_ctrl_mode_no_cca << maca_ctrl_mode) |
 				  (maca_ctrl_seq_tx));	
-	}
+	} 
 	/* status bit 10 is set immediately */
         /* then 11, 10, and 9 get set */ 
         /* they are cleared once we get back to maca_isr */ 
