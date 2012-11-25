@@ -53,6 +53,7 @@
 /* mc1322x */
 #include "mc1322x.h"
 #include "config.h"
+#include "macs.h"
 
 #ifndef CONTIKI_MACA_PREPEND_BYTE
 #define CONTIKI_MACA_PREPEND_BYTE 0xff
@@ -174,6 +175,36 @@ int contiki_maca_off_request(void) {
 	return 1;
 }
 
+mac_entry_t macs[NUM_MAC_ENTRIES];
+
+void bytes_to_64(uint8_t *b, uint64_t *r, uint8_t num) {
+	uint8_t i;
+	*r = 0;
+	for (i = 0; i < num; i++) {
+		*r <<= 8;
+		*r |= b[i];
+	}
+}
+
+/* returns the index in the mac table for this mac */
+/* if an entry doesn't exist, then a blank one is used */
+/* or entry with the oldest beacon is used */
+uint8_t find_or_insert_mac(uint64_t mac) {
+	uint8_t i;
+	uint8_t oldest = 0;
+	for (i = 0; i < NUM_MAC_ENTRIES; i++ ) {
+		if (macs[i].addr == 0 ) { macs[i].addr = mac; return i; }
+		if (mac == macs[i].addr ) { return i; }
+		if (macs[i].last_rx < macs[oldest].last_rx) { oldest = i; }
+	}
+	macs[oldest].addr = mac;
+	macs[oldest].skew = 0;
+	macs[oldest].last_rx = 0;
+	return oldest;
+}
+
+PROCESS_NAME(adj_skew);
+
 /* it appears that the mc1332x radio cannot */
 /* receive packets where the last three bits of the first byte */
 /* is equal to 2 --- even in promiscuous mode */
@@ -192,7 +223,53 @@ int contiki_maca_read(void *buf, unsigned short bufsize) {
 #endif
 		/* handle beacons */
 		if( p->data[1] == FRAME802154_BEACONFRAME ) {
-			ANNOTATE("got a beacon: %08x\n\r", p->rx_time);
+			frame802154_t f;
+			uint8_t idx;
+			uint64_t mac;
+			frame802154_parse((uint8_t *)&(p->data[1]), p->length, &f);
+			bytes_to_64(f.src_addr, &mac, 8);			
+			ANNOTATE("beacon from %08x_%08x\n\r", (uint32_t)(mac >> 32), (uint32_t) mac);
+			idx = find_or_insert_mac(mac);
+			ANNOTATE("idx %d\n\r", idx);
+			macs[idx].last_rx = p->rx_time;
+
+			/* in the case where there is only one other node in the mac table */
+			/* one node needs to adjust and the other needs to stay put */
+			/* maybe each node should advertise how many other nodes it has */
+			/* the one with the most becomes the reference */
+			/* and in the case of a tie, then the highest mac addr wins */
+			/* or something... */
+			/* hmmmm */
+
+			/* use the last byte of the mac address as the slot number for now */
+			/* compute skew, how far the beacon is from a slot boundry */
+//			macs[0].skew = SLOT_WIDTH/2 - (macs[0].last_rx % SLOT_WIDTH);	
+
+			ANNOTATE("slot %x\n\r", (uint32_t)macs[idx].addr & 0xff);
+			macs[idx].skew = ((uint32_t) macs[idx].addr & 0xff) * SLOT_WIDTH - (macs[idx].last_rx % (SLOT_WIDTH * SLOTS_PER_PERIOD));
+
+///			if (macs[0].skew < 3 || macs[0].skew > 3) {
+//			if (bcn_cnt % 4 == 0) { 
+//				*MACA_CLK = *MACA_CLK + macs[idx].skew;
+//				ANNOTATE("adjust by %d\n\r", macs[idx].skew);
+//			}
+
+			ANNOTATE("got a beacon: 0x%08x skew %d ", macs[idx].last_rx, macs[idx].skew);
+			ANNOTATE("from %08x_%08x\n\r", (uint32_t)(macs[idx].addr >> 32), (uint32_t) macs[idx].addr);
+
+			for (idx = 0; idx < NUM_MAC_ENTRIES; idx++) {
+				if(macs[idx].addr != 0) {
+					ANNOTATE("macs[%d] laddr %08x skew %d last rx %08x\n\r", 
+						 idx, 
+						 (uint32_t)macs[idx].addr,
+						 macs[idx].skew,
+						 macs[idx].last_rx);
+				}
+			}
+			
+			process_poll(&adj_skew);
+
+			free_packet(p);
 			return 0;
 		} 
 

@@ -62,6 +62,8 @@ int main(void) {
 
 	mc1322x_init();
 
+	set_channel(RF_CHANNEL);
+
 	/* m12_init() flips the mux switch */
 
 	/* turn on RX and TX led */
