@@ -62,7 +62,7 @@ int main(void) {
 
 	mc1322x_init();
 
-	set_channel(RF_CHANNEL);
+	set_channel(RF_CHANNEL - 11);
 
 	/* m12_init() flips the mux switch */
 
@@ -141,6 +141,8 @@ int main(void) {
 
 	/* Main scheduler loop */
 	while(1) {
+
+		check_maca();
 
 		if(uart1_input_handler != NULL) {
 			if(uart1_can_get()) {
