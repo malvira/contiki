@@ -30,6 +30,7 @@ typedef struct mac_entry {
 	uint64_t addr;
 	uint32_t last_rx; /* last maca clock we got a beacon */
 	int32_t skew; /* how far this beacon is skewed from a grid boundary */
+	uint8_t fresh;
 } mac_entry_t;
 
 extern mac_entry_t macs[NUM_MAC_ENTRIES];

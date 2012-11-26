@@ -232,6 +232,7 @@ int contiki_maca_read(void *buf, unsigned short bufsize) {
 			idx = find_or_insert_mac(mac);
 			ANNOTATE("idx %d\n\r", idx);
 			macs[idx].last_rx = p->rx_time;
+			macs[idx].fresh = 1;
 
 			/* in the case where there is only one other node in the mac table */
 			/* one node needs to adjust and the other needs to stay put */
@@ -256,14 +257,29 @@ int contiki_maca_read(void *buf, unsigned short bufsize) {
 
 			ANNOTATE("got a beacon: 0x%08x skew %d ", macs[idx].last_rx, macs[idx].skew);
 			ANNOTATE("from %08x_%08x\n\r", (uint32_t)(macs[idx].addr >> 32), (uint32_t) macs[idx].addr);
+			ANNOTATE("I am %02x%02x%02x%02x_%02x%02x%02x%02x\n\r", 
+				 rimeaddr_node_addr.u8[0],
+				 rimeaddr_node_addr.u8[1],
+				 rimeaddr_node_addr.u8[2],
+				 rimeaddr_node_addr.u8[3],
+				 rimeaddr_node_addr.u8[4],
+				 rimeaddr_node_addr.u8[5],
+				 rimeaddr_node_addr.u8[6],
+				 rimeaddr_node_addr.u8[7]
+				);
 
 			for (idx = 0; idx < NUM_MAC_ENTRIES; idx++) {
 				if(macs[idx].addr != 0) {
-					ANNOTATE("macs[%d] laddr %08x skew %d last rx %08x\n\r", 
+					ANNOTATE("macs[%d] laddr %08x skew %8d last rx %08x", 
 						 idx, 
 						 (uint32_t)macs[idx].addr,
 						 macs[idx].skew,
 						 macs[idx].last_rx);
+					if(macs[idx].fresh == 1) {
+						ANNOTATE(" *\n\r");
+					} else {
+						ANNOTATE("\n\r");
+					}
 				}
 			}
 			
