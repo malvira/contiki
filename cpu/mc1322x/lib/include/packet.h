@@ -41,6 +41,8 @@
 #define MAX_PAYLOAD_SIZE 125
 #endif
 
+#define PAD 16 /* extra bytes in case their is a DMA run-on */
+
 #define PACKET_STATS 0
 
 struct packet {
@@ -61,7 +63,7 @@ struct packet {
 	uint8_t get_free;
 	uint8_t rxd;
 	#endif
-	uint8_t data[MAX_PAYLOAD_SIZE+2+1]; /* +2 for FCS; + 1 since maca returns the length as the first byte */
+	uint8_t data[MAX_PAYLOAD_SIZE+2+1+PAD]; /* +2 for FCS; + 1 since maca returns the length as the first byte */
 };
 typedef struct packet packet_t;
 
