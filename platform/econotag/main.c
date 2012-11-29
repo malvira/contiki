@@ -139,10 +139,23 @@ int main(void) {
 	print_processes(autostart_processes); 
 	autostart_start(autostart_processes);
 
+	GPIO->FUNC_SEL.RXON = 3;
+	GPIO->PAD_DIR.RXON = 1;
+
 	/* Main scheduler loop */
 	while(1) {
+		uint32_t clk;
 
 		check_maca();
+
+		clk = *MACA_CLK;
+		if (*MACA_CLK & 0xfff00000) {
+			if((clk >> 18) % 2 == 0) {
+				GPIO->DATA.RXON = 1;
+			} else {
+				GPIO->DATA.RXON = 0;
+			}
+		}
 
 		if(uart1_input_handler != NULL) {
 			if(uart1_can_get()) {

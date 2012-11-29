@@ -8,6 +8,8 @@
 /* group a number of slots into a mac period */
 #define SLOTS_PER_PERIOD 256 /* 128 slots x 4096 width is a mac period is about 1 second */
 
+#define BEACON_PERIOD SLOT_WIDTH * SLOTS_PER_PERIOD
+
 /* set the beacon interval in terms of SLOTS_PER_PERIOD */
 /* actual beacon interval is SLOT_PER_PERIOD * 2^BEACON_INTERVAL */
 /* or put another way, 2^BEACON_INTERVAL - 1 is the number of slot periods to skip before beconing again */
@@ -23,6 +25,13 @@
 /* period to queue up beacons */
 #define FILL_BEACON_PERIOD (1 * CLOCK_SECOND) * NUM_BEACONS_QUEUED/2
 
+/* if a node has more that DENSE_NODE_THRESH fresh beacons then it's considered "well connected" */
+#define DENSE_NODE_THRESH 3
+
+/* a well connected node with too much skew can destabilize a network with it's beacons */
+/* because it retransmits that skew to everyone */
+/* surpress beacon generation on well connected nodes if the average skew is above this value */
+#define BEACON_SURPRESS_SKEW BEACON_PERIOD/32
 
 #define NUM_MAC_ENTRIES 16
 
