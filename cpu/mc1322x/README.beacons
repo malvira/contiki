@@ -1,0 +1,127 @@
+Time skew minimization plan
+---------------------------
+
+Idea is that every node transmits periodic beacons. We listen for a
+large chunck of this from time to time. Arriving beacons should arrive
+"aligned" on a clock grid. This would be 1024 250kbps clocks. That
+slices things into blocks that are almost 133bytes long. Then you
+build a table of all your neighbors and how they are beconing. Note
+there grid location (which slice they are falling in) and there
+skew. Then, each node periodically nudges theirself over to converge
+on a table that has minimized the skew.
+
+Beacons might contain a payload that describes when the node will be
+awake so you can transmit to it.
+
+
+
+-----------------------
+Some kind of timeslicing thigy
+
+802.15.4 Beacon MAC for mc13224v
+--------------------------------
+
+nodes that can send beacons (typically the ones involved in routing)
+first listen for an entire mac period and sync to any existing
+becons. Otherwise, these assign themselves beacon 0 and start
+transmitting. After synced, they pick an unallocated beacon time and
+start to use it. 
+
+A mac period looks like this:
+
+ _b__b__b__b__b__b__b__b_
+
+b = becon slot (no beacon transmitted)
+_ = frame half period
+
+Each node that is sending beacons does so ONCE during a mac
+period. E.g. if there is one node, designated "0", it picks a becon
+slot and uses it once per mac period:
+
+  _0__b__b__b__b__b__b__b__0__b__b__b__b__b__b__b_
+
+As other nodes join, they will see beacon 0, sync to it, and allocate
+themselves into the available slots. If no more slots are available,
+the node will not send any beacons.
+
+Under 802.15.4 a beacon is variable length and may be a large
+packet. if P is the max size of an packet (133 bytes) then a b slot
+is:
+
+  .P.
+
+where . is 1/8th the size of P. 
+
+Real numbers, data rate 250kbs = 4us/b
+
+ P = 133 bytes = 1064b = 4.256ms
+ . = 0.532ms
+ b = 5.32ms
+
+Now,
+
+   D = duty ratio
+
+   D = b / (__ + b)
+
+   D__ + Db = b
+
+   D__ = b - Db
+   __ = b(1-D)/D
+
+D = .001
+(1-D)/D = 999
+
+_ = 2.657 secs
+
+What does D really need to be? sleep current will be approx 10uA and
+target average is < 50uA. TX/RX is about 25mA. According to some
+previous analysis .004 % would be great. D = .00004. Sleeping nodes
+can "skip" beacons to get to this point.
+
+10uA/25mA = .0004 = .4%. 
+
+So maybe D = .04 and Skip = 100.
+
+(1-D/D) =  24.
+_ = 63.84ms
+
+That sounds pretty good. Then a battery sensor can skip about 100
+becons which increases latency to about .5s but drops avg current to
+maybe under 50uA.
+
+For sleeping to not sleeping nodes, transmit whenever. For
+not-sleeping to sleeping, use the pending method? Node wakes up and
+asks it's parent for pending data. Parent sends it off. Parent queues
+up packets for some amount of time (but eventually kills them --- on
+order of max skip * beacon period).
+
+How about sleeping to sleeping node? Skip must be at factors of each
+other. E.g. factor of two.
+
+So, 
+
+ b.......b........b........b would be skip of 8 (means listen for
+ every 8th beacon). A network with one beacon node might not have
+ dense beacons already. How does that work with skip?
+
+maybe skip means you skip a certain number of mac periods not
+beacons. I don't like that as much though because of the latency that
+would introduce.
+
+Maybe it's just that empty beacons could towards the skip? 
+
+Well, the duty ratio calc above assumes the worst case beacon density:
+that you have 4 or 8 beaconers within range. With just 1, your duty
+ratio is lower. Problem with skip is that it might line you up to only
+catch the 2 slot or the 3 slot... beacon payload needs to state how
+many beacon slots are used. Skip nodes use that to wake up for the
+next target. If they don't get a beacon, then they wake up for a mac
+period. 
+
+I think that probably, sleepy routers can't have skip on. Well, they
+can do the skip, but they all need the same skip or keep track of
+everyones skip. So maybe the beacon payload explains when the node is
+going to wake up again. Then in 1 needs to talk to 4 it figures out
+when 4 is going to be awake, and does the right thing. 
+
