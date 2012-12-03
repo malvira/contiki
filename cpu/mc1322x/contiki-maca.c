@@ -254,6 +254,7 @@ int contiki_maca_transmit(unsigned short transmit_len) {
 	if(p = get_free_packet()) {
 		p->offset = prepped_p.offset;
 		p->length = prepped_p.length;
+		p->tx_time = *MACA_CLK;
 		memcpy((uint8_t *)(p->data + p->offset),
 		       (const uint8_t *)(prepped_p.data + prepped_p.offset),
 		       prepped_p.length);

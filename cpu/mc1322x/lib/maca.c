@@ -371,7 +371,11 @@ void post_receive(void) {
 	BOUND_CHECK(dma_tx);
 	*MACA_DMARX = (uint32_t)&(dma_rx->data[0]);
 	/* with timeout */		
-	*MACA_SFTCLK = *MACA_CLK + RECV_SOFTIMEOUT; /* soft timeout */ 
+	if(tx_head == 0) {
+		*MACA_SFTCLK = *MACA_CLK + RECV_SOFTIMEOUT; /* soft timeout */ 
+	} else {
+		*MACA_SFTCLK = tx_head->tx_time - 128;
+	}
 	*MACA_TMREN = (1 << maca_tmren_sft);
 	/* start the receive sequence */
 	*MACA_CONTROL = ( (1 << maca_ctrl_asap) | 
@@ -412,6 +416,7 @@ volatile packet_t* rx_packet(void) {
 }
 
 void post_tx(void) {
+	uint32_t clk;
 	/* set dma tx pointer to the payload */
 	/* and set the tx len */
 	disable_irq(MACA);
@@ -434,22 +439,36 @@ void post_tx(void) {
 	BOUND_CHECK(dma_rx);
 	BOUND_CHECK(dma_tx);
 	*MACA_DMARX = (uint32_t)&(dma_rx->data[0]);
-	/* disable soft timeout clock */
-	/* disable start clock */
+
+	clk = *MACA_CLK;
+	/* disable maca timers */
 	*MACA_TMRDIS = (1 << maca_tmren_sft) | ( 1<< maca_tmren_cpl) | ( 1 << maca_tmren_strt ) ;
+
+	if(!(dma_tx->tx_time > clk + 2)) {
+		/* set complete clock to long value */
+		/* acts like a watchdog in case the MACA locks up */
+		*MACA_CPLCLK = clk + CPL_TIMEOUT;
+		*MACA_TMREN = (1 << maca_tmren_cpl);
+	} else {
+		*MACA_STARTCLK = dma_tx->tx_time;
+		*MACA_CPLCLK = dma_tx->tx_time + CPL_TIMEOUT;
+		*MACA_TMREN = (1 << maca_tmren_cpl) | ( 1<< maca_tmren_strt);
+	}
 	
-        /* set complete clock to long value */
-	/* acts like a watchdog in case the MACA locks up */
-	*MACA_CPLCLK = *MACA_CLK + CPL_TIMEOUT;
-	/* enable complete clock */
-	*MACA_TMREN = (1 << maca_tmren_cpl);
 	
 	enable_irq(MACA);
-	*MACA_CONTROL = ( ( 4 << PRECOUNT) |
-			  ( prm_mode << PRM) |
-			  (maca_ctrl_mode_no_cca << maca_ctrl_mode) |
-			  (1 << maca_ctrl_asap) |
-			  (maca_ctrl_seq_tx));	
+	if(!(dma_tx->tx_time > clk + 2)) {
+		*MACA_CONTROL = ( ( 4 << PRECOUNT) |
+				  ( prm_mode << PRM) |
+				  (maca_ctrl_mode_no_cca << maca_ctrl_mode) |
+				  (1 << maca_ctrl_asap) |
+				  (maca_ctrl_seq_tx));
+	} else {
+		*MACA_CONTROL = ( ( 4 << PRECOUNT) |
+				  ( prm_mode << PRM) |
+				  (maca_ctrl_mode_no_cca << maca_ctrl_mode) |
+				  (maca_ctrl_seq_tx));	
+	} 
 	/* status bit 10 is set immediately */
         /* then 11, 10, and 9 get set */ 
         /* they are cleared once we get back to maca_isr */ 
@@ -467,11 +486,29 @@ void tx_packet(volatile packet_t *p) {
 		tx_end->left = 0; tx_end->right = 0;
 		tx_head = tx_end; 
 	} else {
-		/* add p to the end of the queue */
-		tx_end->left = p;
-		p->right = tx_end;
-		/* move the queue */
-		tx_end = p; tx_end->left = 0;
+		volatile packet_t *this, *next;		
+		uint32_t now;
+		/* insert into queue according to tx_time */
+		this = tx_head;
+		now = *MACA_CLK;
+		while ((this != 0) && (this != tx_end) && (this->tx_time - now) > (p->tx_time - now)) 
+		{ 
+			this = this->left; 
+		}
+		if (this == tx_end) {
+			/* add p to the end of the queue */
+			tx_end->left = p;
+			p->right = tx_end;
+			/* move the queue */
+			tx_end = p; tx_end->left = 0;
+		} else {
+			/* insert p */
+			next = this->left;
+			this->left = p;
+			p->left = next;
+			next->right = p;
+			p->right = this;
+		}
 	}
 //	print_packets("tx packet");
 	irq_restore();
@@ -729,8 +766,14 @@ void maca_isr(void) {
 	if (*MACA_IRQ != 0)
 	{ PRINTF("*MACA_IRQ %x\n\r", (unsigned int)*MACA_IRQ); }
 
-	if(tx_head != 0) {
-		post_tx();
+	if(tx_head != 0 && tx_head->tx_time ) {
+		int32_t d_next_tx;
+		d_next_tx = tx_head->tx_time - *MACA_CLK;
+		if(d_next_tx < 128) {
+			post_tx();
+		} else {
+			post_receive();
+		}
 	} else {
 		post_receive();
 	} 
