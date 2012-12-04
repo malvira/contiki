@@ -136,10 +136,6 @@ void check_maca(void) {
 	static volatile uint32_t last_time;
 	static volatile uint32_t last_entry;
 	volatile uint32_t i;
-#if DEBUG_MACA
-	volatile uint32_t count;
-#endif 
-	
 
 	/* if *MACA_CLK == last_time */
 	/* try waiting for one clock period */
@@ -168,8 +164,12 @@ void check_maca(void) {
 	last_entry = maca_entry;
 	last_time = *MACA_CLK;
 
-#if DEBUG_MACA
+#if 1 || DEBUG_MACA
+	{
+	volatile uint32_t count;
+
 	if((count = count_packets()) != NUM_PACKETS) {
+		GPIO->DATA.RXON = 1; 
 		PRINTF("check maca: count_packets %d\n", (int)count);
 		Print_Packets("check_maca");
 #if PACKET_STATS
@@ -183,6 +183,9 @@ void check_maca(void) {
 		}
 #endif
 		if(bit_is_set(*NIPEND, INT_NUM_MACA)) { *INTFRC = (1 << INT_NUM_MACA); }
+	} else {
+		GPIO->DATA.RXON = 0; 
+	}
 	}
 #endif /* DEBUG_MACA */
 	irq_restore();

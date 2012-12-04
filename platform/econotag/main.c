@@ -69,6 +69,9 @@ int main(void) {
 	GPIO->FUNC_SEL.TXON = 1;
 	GPIO->PAD_DIR.TXON = 1;
 
+	GPIO->FUNC_SEL.RXON = 3;
+	GPIO->PAD_DIR.RXON = 1;
+
 	/* m12_init() flips the mux switch */
 
 	/* trims the main crystal load capacitance */
