@@ -107,6 +107,7 @@ volatile packet_t *rx_head, *tx_head;
 /* used for ack recpetion if the packet_pool goes empty */
 /* doesn't go back into the pool when freed */
 static volatile packet_t dummy_ack;
+static volatile packet_t dummy_rx;
 
 /* incremented on every maca entry */
 /* you can use this to detect that the receive loop is still running */
@@ -370,6 +371,7 @@ void post_receive(void) {
 		dma_rx = get_free_packet();
 		if (dma_rx == 0) {
 			PRINTF("trying to fill MACA_DMARX in post_receieve but out of packet buffers\n\r");		
+			dma_rx = &dummy_rx;
 			/* set the sftclock so that we return to the maca_isr */
 			*MACA_SFTCLK = *MACA_CLK + RECV_SOFTIMEOUT; /* soft timeout */ 
 			*MACA_TMREN = (1 << maca_tmren_sft);
@@ -495,24 +497,24 @@ void add_to_tx(volatile packet_t *p) {
 	while ((this != 0) && (this != tx_end) && ((this->tx_time - now) <= (p->tx_time - now))) 
 	{ 
 		this = this->left; 
-		printf("X");
+//		printf("X");
 	}
 
 	if(this == 0) {
-		printf("\n\r* 1 *\n\r");
+//		printf("\n\r* 1 *\n\r");
 		/* start a new queue if empty */
 		tx_end = p;
 		tx_end->left = 0; tx_end->right = 0;
 		tx_head = tx_end;
 	} else if (this == tx_end) {
-		printf("\n\r* 4 *\n\r");
+//		printf("\n\r* 4 *\n\r");
 		/* add p to the end of the queue */
 		tx_end->left = p;
 		p->right = tx_end;
 		/* move the queue */
 		tx_end = p; tx_end->left = 0;
 	} else if ((this->tx_time - now) > (p->tx_time - now)) {
-		printf("\n\r* 2 *\n\r");
+//		printf("\n\r* 2 *\n\r");
 		/* this is later than p */
 		/* add p before this */
 		p->right = this->right;
@@ -520,7 +522,7 @@ void add_to_tx(volatile packet_t *p) {
 		p->left = this;
 		this->right = p;
 	} else if ((this->tx_time - now) <= (p->tx_time - now)) {
-		printf("\n\r* 3 *\n\r");
+//		printf("\n\r* 3 *\n\r");
 		/* this is sooner or at the same time as p */
 		/* add p after this */
 		p->left = this->left;
@@ -727,21 +729,27 @@ void maca_isr(void) {
 
 	if (data_indication_irq()) {
 		*MACA_CLRIRQ = (1 << maca_irq_di);
-		dma_rx->length = *MACA_GETRXLVL - 2; /* packet length does not include FCS */
-		dma_rx->lqi = get_lqi();
-		dma_rx->rx_time = *MACA_TIMESTAMP;
 
-		/* check if received packet needs an ack */
-		if(prm_mode == AUTOACK && (dma_rx->data[1] & MAC_ACK_REQUEST_FLAG)) {
-			/* this wait is necessary to auto-ack */
-			volatile uint32_t wait_clk;
-			wait_clk = *MACA_CLK + 200;
-			while(*MACA_CLK < wait_clk) { continue; }
+		if (dma_rx != &dummy_ack && dma_rx != &dummy_rx) 
+		{
+			
+			dma_rx->length = *MACA_GETRXLVL - 2; /* packet length does not include FCS */
+			dma_rx->lqi = get_lqi();
+			dma_rx->rx_time = *MACA_TIMESTAMP;
+			
+			/* check if received packet needs an ack */
+			if(prm_mode == AUTOACK && (dma_rx->data[1] & 0x20)) {
+				/* this wait is necessary to auto-ack */
+				volatile uint32_t wait_clk;
+				wait_clk = *MACA_CLK + 200;
+				while(*MACA_CLK < wait_clk) { continue; }
+			}
+			
+			if(maca_rx_callback != 0) { maca_rx_callback(dma_rx); }
+			
+			add_to_rx(dma_rx);
 		}
-
-		if(maca_rx_callback != 0) { maca_rx_callback(dma_rx); }
-
-		add_to_rx(dma_rx);
+		
 		dma_rx = 0;
 	}
 	if (filter_failed_irq()) {
