@@ -62,6 +62,13 @@ int main(void) {
 
 	mc1322x_init();
 
+	set_power(0x11);
+	mc1322x_config.channel = RF_CHANNEL-11;
+	set_channel(RF_CHANNEL-11);
+
+	GPIO->FUNC_SEL.TXON = 1;
+	GPIO->PAD_DIR.TXON = 1;
+
 	/* m12_init() flips the mux switch */
 
 	/* trims the main crystal load capacitance */
@@ -99,8 +106,18 @@ int main(void) {
 		/* full mac is EC473C4D12BDD1D5 */
 
 #if (M12_SERIAL == 0)
-                /* use random mac from experimental range */
-		mc1322x_config.eui = (0x0050C2A8Cull << 24) | (*MACA_RANDOM & (0xffffff));
+		{
+			uint32_t ext;
+			/* use random mac from experimental range */
+			adc_service();
+			*MACA_RANDOM = adc_vbatt;
+			ext = *MACA_RANDOM & 0xfff;
+			adc_service();
+			*MACA_RANDOM = adc_vbatt;
+			ext = (ext << 12) | *MACA_RANDOM & 0xfff;
+			mc1322x_config.eui = (0x0050C2A8Cull << 24) | (ext);
+		}
+
 #else
 		/* construct mac from serial number */
 		mc1322x_config.eui = (0xEC473C4D12ull << 24) | M12_SERIAL;
@@ -111,6 +128,9 @@ int main(void) {
 	/* configure address on maca hardware and RIME */
 	contiki_maca_set_mac_address(mc1322x_config.eui);
 
+	/* seed random number generator with mac address */
+	*MACA_RANDOM = (uint32_t)mc1322x_config.eui;
+	
 #if WITH_UIP6
 	memcpy(&uip_lladdr.addr, &rimeaddr_node_addr.u8, sizeof(uip_lladdr.addr));
 	queuebuf_init();

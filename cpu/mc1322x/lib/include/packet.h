@@ -41,7 +41,7 @@
 #define MAX_PAYLOAD_SIZE 125
 #endif
 
-#define PACKET_STATS 0
+#define PACKET_STATS 1
 
 struct packet {
         uint8_t length; /* does not include FCS checksum */
@@ -53,6 +53,7 @@ struct packet {
 	uint8_t offset; 	
 	uint8_t lqi;
 	uint8_t status;
+	uint8_t tries; /* number of tx attempts this packet has made */
 	uint32_t tx_time;
 	uint32_t rx_time;
 	#if PACKET_STATS

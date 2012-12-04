@@ -39,9 +39,6 @@
  *         Configuration for Econotag
  *
  * \author
- *         Original by:
- *         Simon Barner <barner@in.tum.de>
- *         This version by:
  *         Mariano Alvira <mar@devl.org>
  */
 
@@ -50,107 +47,94 @@
 
 #include <stdint.h>
 
-/* mc1322x files */
-#include "contiki-mc1322x-conf.h"
+#define NETSTACK_CONF_RDC nullrdc_driver
+#define NETSTACK_CONF_MAC nullmac_driver
+#define UIP_CONF_BUFFER_SIZE 1300
 
-/* Econotag I tune parameters */
-#define ECONOTAG_CTUNE_4PF 1
-/* Coarse tune: add 0-15 pf (CTUNE is 4 bits) */
-#define ECONOTAG_CTUNE 11
-/* Fine tune: add FTUNE * 156fF (FTUNE is 5bits) */
-#define ECONOTAG_FTUNE 7
+#ifdef PLATFORM_CONF_H
+#include PLATFORM_CONF_H
+#else
+#include "platform-conf.h"
+#endif /* PLATFORM_CONF_H */
 
-/* M12 tune parameters */
-#define M12_CTUNE_4PF 1
-#define M12_CTUNE 3
-#define M12_FTUNE 3
+#ifndef NETSTACK_CONF_MAC
+#define NETSTACK_CONF_MAC     csma_driver
+#endif /* NETSTACK_CONF_MAC */
 
-/* the econotag platform will correctly detect an Econotag I (no M12) vs. Econotag II (w/M12) */
-/* and trim the main crystal accordingly */
-/* this detection will be incorrect if you populate the 32.768kHz crystal on the Econotag I */
-/* In that case, you should FORCE_ECONOTAG_I below */
-#define FORCE_ECONOTAG_I 0
+#ifndef NETSTACK_CONF_RDC
+#define NETSTACK_CONF_RDC     contikimac_driver
+#endif /* NETSTACK_CONF_RDC */
 
-/* if you define a serial number then it will be used to comput the mac address */
-/* otherwise, a random mac address in the Redwire development IAB will be used */
-/* #define M12_CONF_SERIAL 0x000000 */
+#ifndef NETSTACK_CONF_RDC_CHANNEL_CHECK_RATE
+#define NETSTACK_CONF_RDC_CHANNEL_CHECK_RATE 8
+#endif /* NETSTACK_CONF_RDC_CHANNEL_CHECK_RATE */
 
-/* Clock ticks per second */
-#define CLOCK_CONF_SECOND 100
+#ifndef NETSTACK_CONF_RADIO
+#define NETSTACK_CONF_RADIO   cc2420_driver
+#endif /* NETSTACK_CONF_RADIO */
 
-#define CCIF
-#define CLIF
+#ifndef NETSTACK_CONF_FRAMER
+#define NETSTACK_CONF_FRAMER  framer_802154
+#endif /* NETSTACK_CONF_FRAMER */
 
-#define CONSOLE_UART UART1
-#define CONSOLE_BAUD 115200
+#ifndef CC2420_CONF_AUTOACK
+#define CC2420_CONF_AUTOACK              1
+#endif /* CC2420_CONF_AUTOACK */
 
-#define dbg_putchar(x) uart1_putc(x)
-
-#define USE_FORMATTED_STDIO         1
-#define MACA_DEBUG                  0
-#define CONTIKI_MACA_RAW_MODE       0
-
-#define BLOCKING_TX 1
-#define MACA_AUTOACK 1
-#define NULLRDC_CONF_802154_AUTOACK_HW 1
-
-#define USE_WDT 0
-
-#ifndef WDT_TIMEOUT
-#define WDT_TIMEOUT 5000 /* watchdog timeout in ms */
-#endif
-
-/* end of mc1322x specific config. */
-
-/* start of conitki config. */
-#define PLATFORM_HAS_LEDS 1
-#define PLATFORM_HAS_BUTTON 1
-
-/* Core rtimer.h defaults to 16 bit timer unless RTIMER_CLOCK_LT is defined */
-typedef unsigned long rtimer_clock_t;
-#define RTIMER_CLOCK_LT(a,b)     ((signed long)((a)-(b)) < 0)
-
-#define RIMEADDR_CONF_SIZE              8
+/* Specify whether the RDC layer should enable
+   per-packet power profiling. */
+#define CONTIKIMAC_CONF_COMPOWER         1
+#define XMAC_CONF_COMPOWER               1
+#define CXMAC_CONF_COMPOWER              1
 
 #if WITH_UIP6
 /* Network setup for IPv6 */
 #define NETSTACK_CONF_NETWORK sicslowpan_driver
-#define NETSTACK_CONF_MAC     nullmac_driver 
-#define NETSTACK_CONF_RDC     nullrdc_driver
-#define NETSTACK_CONF_RADIO   contiki_maca_driver
-#define NETSTACK_CONF_FRAMER  framer_802154
 
-#define NETSTACK_CONF_RDC_CHANNEL_CHECK_RATE      8
-#define RIME_CONF_NO_POLITE_ANNOUCEMENTS 0
+/* Specify a minimum packet size for 6lowpan compression to be
+   enabled. This is needed for ContikiMAC, which needs packets to be
+   larger than a specified size, if no ContikiMAC header should be
+   used. */
+#define SICSLOWPAN_CONF_COMPRESSION_THRESHOLD 63
+#define CONTIKIMAC_CONF_WITH_CONTIKIMAC_HEADER 0
+
 #define CXMAC_CONF_ANNOUNCEMENTS         0
 #define XMAC_CONF_ANNOUNCEMENTS          0
 
+#ifndef QUEUEBUF_CONF_NUM
+#define QUEUEBUF_CONF_NUM                8
+#endif
+
 #else /* WITH_UIP6 */
+
 /* Network setup for non-IPv6 (rime). */
 
 #define NETSTACK_CONF_NETWORK rime_driver
-#define NETSTACK_CONF_MAC     csma_driver
-#define NETSTACK_CONF_RDC     sicslowmac_driver
-#define NETSTACK_CONF_RADIO   contiki_maca_driver
-#define NETSTACK_CONF_FRAMER  framer_802154
-
-#define NETSTACK_CONF_RDC_CHANNEL_CHECK_RATE      8
 
 #define COLLECT_CONF_ANNOUNCEMENTS       1
-#define RIME_CONF_NO_POLITE_ANNOUCEMENTS 0
 #define CXMAC_CONF_ANNOUNCEMENTS         0
 #define XMAC_CONF_ANNOUNCEMENTS          0
 #define CONTIKIMAC_CONF_ANNOUNCEMENTS    0
 
-#define CONTIKIMAC_CONF_COMPOWER         0
-#define XMAC_CONF_COMPOWER               0
-#define CXMAC_CONF_COMPOWER              0
+#ifndef COLLECT_NEIGHBOR_CONF_MAX_COLLECT_NEIGHBORS
+#define COLLECT_NEIGHBOR_CONF_MAX_COLLECT_NEIGHBORS     32
+#endif /* COLLECT_NEIGHBOR_CONF_MAX_COLLECT_NEIGHBORS */
 
-#define COLLECT_NEIGHBOR_CONF_MAX_NEIGHBORS      32
+#ifndef QUEUEBUF_CONF_NUM
+#define QUEUEBUF_CONF_NUM                16
+#endif /* QUEUEBUF_CONF_NUM */
+
+#ifndef TIMESYNCH_CONF_ENABLED
+#define TIMESYNCH_CONF_ENABLED           0
+#endif /* TIMESYNCH_CONF_ENABLED */
+
+#if TIMESYNCH_CONF_ENABLED
+/* CC2420 SDF timestamps must be on if timesynch is enabled. */
+#undef CC2420_CONF_SFD_TIMESTAMPS
+#define CC2420_CONF_SFD_TIMESTAMPS       1
+#endif /* TIMESYNCH_CONF_ENABLED */
 
 #endif /* WITH_UIP6 */
-
-#define QUEUEBUF_CONF_NUM          16
 
 #define PACKETBUF_CONF_ATTRS_INLINE 1
 
@@ -163,7 +147,18 @@ typedef unsigned long rtimer_clock_t;
 #define IEEE802154_CONF_PANID       0xABCD
 
 #define PROFILE_CONF_ON 0
-#define ENERGEST_CONF_ON 0
+#ifndef ENERGEST_CONF_ON
+#define ENERGEST_CONF_ON 1
+#endif /* ENERGEST_CONF_ON */
+
+#define ELFLOADER_CONF_TEXT_IN_ROM 0
+#ifndef ELFLOADER_CONF_DATAMEMORY_SIZE
+#define ELFLOADER_CONF_DATAMEMORY_SIZE 0x400
+#endif /* ELFLOADER_CONF_DATAMEMORY_SIZE */
+#ifndef ELFLOADER_CONF_TEXTMEMORY_SIZE
+#define ELFLOADER_CONF_TEXTMEMORY_SIZE 0x800
+#endif /* ELFLOADER_CONF_TEXTMEMORY_SIZE */
+
 
 #define AODV_COMPLIANCE
 #define AODV_NUM_RT_ENTRIES 32
@@ -172,6 +167,7 @@ typedef unsigned long rtimer_clock_t;
 
 #define PROCESS_CONF_NUMEVENTS 8
 #define PROCESS_CONF_STATS 1
+/*#define PROCESS_CONF_FASTPOLL    4*/
 
 #ifdef WITH_UIP6
 
@@ -180,18 +176,27 @@ typedef unsigned long rtimer_clock_t;
 #define UIP_CONF_LL_802154              1
 #define UIP_CONF_LLH_LEN                0
 
-#define UIP_CONF_ROUTER                 1  
+#define UIP_CONF_ROUTER                 1
+#ifndef UIP_CONF_IPV6_RPL
 #define UIP_CONF_IPV6_RPL               1
+#endif /* UIP_CONF_IPV6_RPL */
 
-#define UIP_CONF_DS6_NBR_NBU     30
-#define UIP_CONF_DS6_ROUTE_NBU   30
+/* configure number of neighbors and routes */
+#ifndef UIP_CONF_DS6_NBR_NBU
+#define UIP_CONF_DS6_NBR_NBU     20
+#endif /* UIP_CONF_DS6_NBR_NBU */
+#ifndef UIP_CONF_DS6_ROUTE_NBU
+#define UIP_CONF_DS6_ROUTE_NBU   20
+#endif /* UIP_CONF_DS6_ROUTE_NBU */
 
 #define UIP_CONF_ND6_SEND_RA		0
 #define UIP_CONF_ND6_REACHABLE_TIME     600000
 #define UIP_CONF_ND6_RETRANS_TIMER      10000
 
 #define UIP_CONF_IPV6                   1
+#ifndef UIP_CONF_IPV6_QUEUE_PKT
 #define UIP_CONF_IPV6_QUEUE_PKT         0
+#endif /* UIP_CONF_IPV6_QUEUE_PKT */
 #define UIP_CONF_IPV6_CHECKS            1
 #define UIP_CONF_IPV6_REASSEMBLY        0
 #define UIP_CONF_NETIF_MAX_ADDRESSES    3
@@ -199,9 +204,9 @@ typedef unsigned long rtimer_clock_t;
 #define UIP_CONF_ND6_MAX_NEIGHBORS      4
 #define UIP_CONF_ND6_MAX_DEFROUTERS     2
 #define UIP_CONF_IP_FORWARD             0
-#define UIP_CONF_BUFFER_SIZE		1300
-#define SICSLOWPAN_CONF_FRAG            1
-#define SICSLOWPAN_CONF_MAXAGE          8
+#ifndef UIP_CONF_BUFFER_SIZE
+#define UIP_CONF_BUFFER_SIZE		240
+#endif
 
 #define SICSLOWPAN_CONF_COMPRESSION_IPV6        0
 #define SICSLOWPAN_CONF_COMPRESSION_HC1         1
@@ -213,17 +218,24 @@ typedef unsigned long rtimer_clock_t;
 #endif /* SICSLOWPAN_CONF_FRAG */
 #define SICSLOWPAN_CONF_CONVENTIONAL_MAC	1
 #define SICSLOWPAN_CONF_MAX_ADDR_CONTEXTS       2
+#ifndef SICSLOWPAN_CONF_MAX_MAC_TRANSMISSIONS
+#define SICSLOWPAN_CONF_MAX_MAC_TRANSMISSIONS   5
+#endif /* SICSLOWPAN_CONF_MAX_MAC_TRANSMISSIONS */
 #else /* WITH_UIP6 */
 #define UIP_CONF_IP_FORWARD      1
-#define UIP_CONF_BUFFER_SIZE     1300
+#define UIP_CONF_BUFFER_SIZE     108
 #endif /* WITH_UIP6 */
 
 #define UIP_CONF_ICMP_DEST_UNREACH 1
 
 #define UIP_CONF_DHCP_LIGHT
 #define UIP_CONF_LLH_LEN         0
+#ifndef  UIP_CONF_RECEIVE_WINDOW
 #define UIP_CONF_RECEIVE_WINDOW  48
+#endif
+#ifndef  UIP_CONF_TCP_MSS
 #define UIP_CONF_TCP_MSS         48
+#endif
 #define UIP_CONF_MAX_CONNECTIONS 4
 #define UIP_CONF_MAX_LISTENPORTS 8
 #define UIP_CONF_UDP_CONNS       12
@@ -237,10 +249,14 @@ typedef unsigned long rtimer_clock_t;
 
 #define UIP_CONF_TCP_SPLIT       0
 
+
+
 /* include the project config */
 /* PROJECT_CONF_H might be defined in the project Makefile */
 #ifdef PROJECT_CONF_H
 #include PROJECT_CONF_H
 #endif /* PROJECT_CONF_H */
 
-#endif /* __CONTIKI_CONF_H__ */
+
+#endif /* CONTIKI_CONF_H */
+

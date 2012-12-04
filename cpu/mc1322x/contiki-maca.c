@@ -255,6 +255,7 @@ int contiki_maca_transmit(unsigned short transmit_len) {
 		p->offset = prepped_p.offset;
 		p->length = prepped_p.length;
 		p->tx_time = *MACA_CLK;
+		p->tries = 0;
 		memcpy((uint8_t *)(p->data + p->offset),
 		       (const uint8_t *)(prepped_p.data + prepped_p.offset),
 		       prepped_p.length);
@@ -273,18 +274,24 @@ int contiki_maca_transmit(unsigned short transmit_len) {
 int contiki_maca_send(const void *payload, unsigned short payload_len) {
 	contiki_maca_prepare(payload, payload_len);
 	contiki_maca_transmit(payload_len);
+#if BLOCKING_TX
 	switch(tx_status) {
 	case SUCCESS:
+		printf("TXOK\n\r");
+		return RADIO_TX_OK;
 	case CRC_FAILED: /* CRC_FAILED is usually an ack */
-		PRINTF("TXOK\n\r");
+		printf("CRCERR\n\r");
 		return RADIO_TX_OK;
 	case NO_ACK:
-		PRINTF("NOACK\n\r");
+		printf("NOACK\n\r");
 		return RADIO_TX_NOACK;
 	default:
-		PRINTF("TXERR\n\r");
+		printf("TXERR\n\r");
 		return RADIO_TX_ERR;
 	}
+#else
+	return RADIO_TX_OK;
+#endif
 }
 
 PROCESS(contiki_maca_process, "maca process");

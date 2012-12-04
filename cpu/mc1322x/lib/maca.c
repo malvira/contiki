@@ -76,6 +76,17 @@
 #define MACA_INSERT_ACK 1
 #endif
 
+/* number of retransmission attempts to do when a tx fails */
+#ifndef MACA_CONF_RETRIES
+#define MACA_RETRIES 5
+#endif
+
+/* maca clks to backoff on retry */
+/* this is an exponential backoff */
+#ifndef MACA_CONF_BACKOFF
+#define MACA_BACKOFF 8 * 128 /* backoff almost a full packet */ 
+#endif
+
 /* Bit in first byte of 802.15.4 message that indicates an */
 /* acknowledgereply frame is expected */
 #define MAC_ACK_REQUEST_FLAG 0x20
@@ -421,6 +432,7 @@ void post_tx(void) {
 	/* and set the tx len */
 	disable_irq(MACA);
 	last_post = TX_POST;
+	tx_head->tries++;
 	dma_tx = tx_head; 
 #if PACKET_STATS
 	dma_tx->post_tx++;
@@ -474,43 +486,64 @@ void post_tx(void) {
         /* they are cleared once we get back to maca_isr */ 
 }
 
+void add_to_tx(volatile packet_t *p) {
+	volatile packet_t *this, *next;		
+	uint32_t now;
+	/* insert into queue according to tx_time */
+	this = tx_head;
+	now = *MACA_CLK;
+	while ((this != 0) && (this != tx_end) ) 
+	{ 
+		this = this->left; 
+		printf("x");
+	}
+
+	if(this == 0) {
+		/* start a new queue if empty */
+		tx_end = p;
+		tx_end->left = 0; tx_end->right = 0;
+		tx_head = tx_end; 
+	} else if ((this->tx_time - now) > (p->tx_time - now)) {
+		/* this is later than p */
+		/* add p before this */
+		p->right = this->right;
+		p->right->left = p;
+		p->left = this;
+		this->right = p;
+	} else if ((this->tx_time - now) <= (p->tx_time - now)) {
+		/* this is sooner or at the same time as p */
+		/* add p after this */
+		p->left = this->left;
+		p->left->right = p;
+		p->right = this;
+		this->left = p;
+	} else if (this == tx_end) {
+		/* add p to the end of the queue */
+		tx_end->left = p;
+		p->right = tx_end;
+		/* move the queue */
+		tx_end = p; tx_end->left = 0;
+	}
+}
+
 void tx_packet(volatile packet_t *p) {
 	safe_irq_disable(MACA);
 
 	BOUND_CHECK(p);
 
 	if(!p) {  PRINTF("tx_packet passed packet 0\n\r"); return; }
+
+	add_to_tx(p);
+
 	if(tx_head == 0) {
 		/* start a new queue if empty */
 		tx_end = p;
 		tx_end->left = 0; tx_end->right = 0;
 		tx_head = tx_end; 
 	} else {
-		volatile packet_t *this, *next;		
-		uint32_t now;
-		/* insert into queue according to tx_time */
-		this = tx_head;
-		now = *MACA_CLK;
-		while ((this != 0) && (this != tx_end) && (this->tx_time - now) > (p->tx_time - now)) 
-		{ 
-			this = this->left; 
-		}
-		if (this == tx_end) {
-			/* add p to the end of the queue */
-			tx_end->left = p;
-			p->right = tx_end;
-			/* move the queue */
-			tx_end = p; tx_end->left = 0;
-		} else {
-			/* insert p */
-			next = this->left;
-			this->left = p;
-			p->left = next;
-			next->right = p;
-			p->right = this;
-		}
+
 	}
-//	print_packets("tx packet");
+	print_packets("tx packet");
 	irq_restore();
 	if(bit_is_set(*NIPEND, INT_NUM_MACA)) { *INTFRC = (1 << INT_NUM_MACA); } 
 	if(last_post == NO_POST) { *INTFRC = (1<<INT_NUM_MACA); }
@@ -752,9 +785,22 @@ void maca_isr(void) {
 			}
 #endif
 
-			if(maca_tx_callback != 0) { maca_tx_callback(tx_head); }
+			if(tx_head->status != SUCCESS && (tx_head->data[0] & MAC_ACK_REQUEST_FLAG) && tx_head->tries < MACA_RETRIES ) {
+				volatile packet_t *p;
+				/* schedule retry */
+				p = tx_head;
+				/* move tx_head back*/
+				tx_head = tx_head->left;
+				if(tx_head == 0) { tx_end = 0; }
+				tx_head->right = 0;
+				p->tx_time = *MACA_CLK + (*MACA_RANDOM % (MACA_BACKOFF * (p->tries))) ;
+//				p->tx_time = *MACA_CLK + (MACA_BACKOFF << p->tries - 1) + (*MACA_RANDOM % (MACA_BACKOFF << (p->tries))) ;
+				add_to_tx(p);
+			} else {
+				if(maca_tx_callback != 0) { maca_tx_callback(tx_head); }
+				free_tx_head();
+			}
 			dma_tx = 0;
-			free_tx_head();
 			last_post = NO_POST;
 		}
 		ResumeMACASync();
