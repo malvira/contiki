@@ -492,18 +492,27 @@ void add_to_tx(volatile packet_t *p) {
 	/* insert into queue according to tx_time */
 	this = tx_head;
 	now = *MACA_CLK;
-	while ((this != 0) && (this != tx_end) ) 
+	while ((this != 0) && (this != tx_end) && ((this->tx_time - now) <= (p->tx_time - now))) 
 	{ 
 		this = this->left; 
-		printf("x");
+		printf("X");
 	}
 
 	if(this == 0) {
+		printf("\n\r* 1 *\n\r");
 		/* start a new queue if empty */
 		tx_end = p;
 		tx_end->left = 0; tx_end->right = 0;
-		tx_head = tx_end; 
+		tx_head = tx_end;
+	} else if (this == tx_end) {
+		printf("\n\r* 4 *\n\r");
+		/* add p to the end of the queue */
+		tx_end->left = p;
+		p->right = tx_end;
+		/* move the queue */
+		tx_end = p; tx_end->left = 0;
 	} else if ((this->tx_time - now) > (p->tx_time - now)) {
+		printf("\n\r* 2 *\n\r");
 		/* this is later than p */
 		/* add p before this */
 		p->right = this->right;
@@ -511,19 +520,15 @@ void add_to_tx(volatile packet_t *p) {
 		p->left = this;
 		this->right = p;
 	} else if ((this->tx_time - now) <= (p->tx_time - now)) {
+		printf("\n\r* 3 *\n\r");
 		/* this is sooner or at the same time as p */
 		/* add p after this */
 		p->left = this->left;
 		p->left->right = p;
 		p->right = this;
 		this->left = p;
-	} else if (this == tx_end) {
-		/* add p to the end of the queue */
-		tx_end->left = p;
-		p->right = tx_end;
-		/* move the queue */
-		tx_end = p; tx_end->left = 0;
 	}
+
 }
 
 void tx_packet(volatile packet_t *p) {
@@ -793,8 +798,8 @@ void maca_isr(void) {
 				tx_head = tx_head->left;
 				if(tx_head == 0) { tx_end = 0; }
 				tx_head->right = 0;
-				p->tx_time = *MACA_CLK + (*MACA_RANDOM % (MACA_BACKOFF * (p->tries))) ;
-//				p->tx_time = *MACA_CLK + (MACA_BACKOFF << p->tries - 1) + (*MACA_RANDOM % (MACA_BACKOFF << (p->tries))) ;
+//				p->tx_time = *MACA_CLK + (*MACA_RANDOM % (MACA_BACKOFF * (p->tries))) ;
+				p->tx_time = *MACA_CLK + (MACA_BACKOFF << p->tries - 1) + (*MACA_RANDOM % (MACA_BACKOFF << (p->tries))) ;
 				add_to_tx(p);
 			} else {
 				if(maca_tx_callback != 0) { maca_tx_callback(tx_head); }
