@@ -170,9 +170,9 @@ void check_maca(void) {
 
 	if((count = count_packets()) != NUM_PACKETS) {
 		GPIO->DATA.RXON = 1; 
-		PRINTF("check maca: count_packets %d\n", (int)count);
-		Print_Packets("check_maca");
-#if PACKET_STATS
+//		PRINTF("check maca: count_packets %d\n", (int)count);
+//		Print_Packets("check_maca");
+#if 0 && PACKET_STATS
 		for(i=0; i<NUM_PACKETS; i++) {
 			printf("packet 0x%lx seen %d post_tx %d get_free %d rxd %d\n", 
 			       (uint32_t) &packet_pool[i], 
@@ -553,7 +553,7 @@ void tx_packet(volatile packet_t *p) {
 	} else {
 
 	}
-	print_packets("tx packet");
+//	print_packets("tx packet");
 	irq_restore();
 	if(bit_is_set(*NIPEND, INT_NUM_MACA)) { *INTFRC = (1 << INT_NUM_MACA); } 
 	if(last_post == NO_POST) { *INTFRC = (1<<INT_NUM_MACA); }
