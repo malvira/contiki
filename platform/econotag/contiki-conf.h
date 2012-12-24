@@ -48,8 +48,15 @@
 #include <stdint.h>
 
 #define NETSTACK_CONF_RDC nullrdc_driver
-#define NETSTACK_CONF_MAC nullmac_driver
+//#define NETSTACK_CONF_MAC nullmac_driver
 #define UIP_CONF_BUFFER_SIZE 1300
+#define UIP_CONF_DS6_NBR_NBU     30
+#define UIP_CONF_DS6_ROUTE_NBU   30
+#define CSMA_CONF_MAX_MAC_TRANSMISSIONS 3
+
+//#define RPL_CONF_MIN_HOPRANKINC 8
+
+//#define RPL_CONF_OF rpl_of0
 
 #ifdef PLATFORM_CONF_H
 #include PLATFORM_CONF_H
