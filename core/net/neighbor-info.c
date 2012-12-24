@@ -51,6 +51,7 @@
 /*---------------------------------------------------------------------------*/
 NEIGHBOR_ATTRIBUTE_GLOBAL(link_metric_t, attr_etx, NULL);
 NEIGHBOR_ATTRIBUTE_GLOBAL(unsigned long, attr_timestamp, NULL);
+NEIGHBOR_ATTRIBUTE_GLOBAL(uint8_t, attr_lqi, NULL);
 
 static neighbor_info_subscriber_t subscriber_callback;
 /*---------------------------------------------------------------------------*/
@@ -157,11 +158,27 @@ void
 neighbor_info_packet_received(void)
 {
   const rimeaddr_t *src;
+  uint8_t *prev_lqi;
 
   src = packetbuf_addr(PACKETBUF_ADDR_SENDER);
   if(rimeaddr_cmp(src, &rimeaddr_null)) {
     return;
   }
+
+  prev_lqi = (link_metric_t *)neighbor_attr_get_data(&attr_etx, dest);
+
+  if(prev_lqi == NULL || *prev_lqi == 0) {
+	  
+    recorded_metric = NEIGHBOR_INFO_ETX2FIX(ETX_LIMIT);
+    new_metric = packet_metric;
+    first_update = 1;
+  } else {
+    recorded_metric = *metricp;
+    /* Update the EWMA of the ETX for the neighbor. */
+    new_metric = ((uint16_t)recorded_metric * ETX_ALPHA +
+               (uint16_t)packet_metric * (ETX_SCALE - ETX_ALPHA)) / ETX_SCALE;
+  }
+
 
   PRINTF("neighbor-info: packet received from %d.%d\n",
 	src->u8[sizeof(*src) - 2], src->u8[sizeof(*src) - 1]);
@@ -175,6 +192,7 @@ neighbor_info_subscribe(neighbor_info_subscriber_t s)
   if(subscriber_callback == NULL) {
     neighbor_attr_register(&attr_etx);
     neighbor_attr_register(&attr_timestamp);
+    neighbor_attr_register(&attr_lqi);
     subscriber_callback = s;
     return 1;
   }
