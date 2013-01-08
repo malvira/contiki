@@ -53,70 +53,46 @@ volatile unsigned long seconds = 0;
 #define TCF1 4
 #define TCF2 5
 
-void
-clock_init()
+static uint32_t last_rtc;
+
+void 
+rtc_isr(void) 
 {
-	/* timer setup */
-	/* CTRL */
-#define COUNT_MODE 1      /* use rising edge of primary source */
-#define PRIME_SRC  0xf    /* Perip. clock with 128 prescale (for 24Mhz = 187500Hz)*/
-#define SEC_SRC    0      /* don't need this */
-#define ONCE       0      /* keep counting */
-#define LEN        1      /* count until compare then reload with value in LOAD */
-#define DIR        0      /* count up */
-#define CO_INIT    0      /* other counters cannot force a re-initialization of this counter */
-#define OUT_MODE   0      /* OFLAG is asserted while counter is active */
 
-	*TMR_ENBL = 0;                     /* tmrs reset to enabled */
-	*TMR0_SCTRL = 0;
-	*TMR0_CSCTRL =0x0040;
-	*TMR0_LOAD = 0;                    /* reload to zero */
-	*TMR0_COMP_UP = 1875;             /* trigger a reload at the end */
-	*TMR0_CMPLD1 = 1875;              /* compare 1 triggered reload level, 10HZ maybe? */
-	*TMR0_CNTR = 0;                    /* reset count register */
-	*TMR0_CTRL = (COUNT_MODE<<13) | (PRIME_SRC<<9) | (SEC_SRC<<7) | (ONCE<<6) | (LEN<<5) | (DIR<<4) | (CO_INIT<<3) | (OUT_MODE);
-	*TMR_ENBL = 0xf;                   /* enable all the timers --- why not? */
-
-	enable_irq(TMR);
-/* Do startup scan of the ADC */
-#if CLOCK_CONF_SAMPLEADC
-	adc_reading[8]=0;
-	adc_init();
-	while (adc_reading[8]==0) adc_service();
-#endif
-}
-
-void tmr0_isr(void) {
-	if(bit_is_set(*TMR(0,CSCTRL),TCF1)) {
-		current_clock++;
-		if((current_clock % CLOCK_CONF_SECOND) == 0) {
-			seconds++;
-#if BLINK_SECONDS
-			leds_toggle(LEDS_GREEN);
-#endif
-/* ADC can be serviced every tick or every second */
-#if CLOCK_CONF_SAMPLEADC > 1
-			adc_service();
-#endif
-		}
-#if CLOCK_CONF_SAMPLEADC == 1
-		adc_service();
-#endif
-		if(etimer_pending() &&
-		   (etimer_next_expiration_time() - current_clock - 1) > MAX_TICKS) {
- 			etimer_request_poll();
- 		}
-
-
-		/* clear the compare flags */
-		clear_bit(*TMR(0,SCTRL),TCF);
-		clear_bit(*TMR(0,CSCTRL),TCF1);
-		clear_bit(*TMR(0,CSCTRL),TCF2);
-		return;
-	} else {
-		/* this timer didn't create an interrupt condition */
+	/* see note in table 5-13 of the reference manual: it takes at least two RTC clocks for the EVT bit to clear */
+	if ((CRM->RTC_COUNT - last_rtc) <= 2) {
+		CRM->STATUSbits.RTC_WU_EVT = 1;
 		return;
 	}
+	last_rtc = CRM->RTC_COUNT;
+
+	/* clear RTC event flag (for paranoia)*/
+	CRM->STATUSbits.RTC_WU_EVT = 1;
+
+	current_clock++;
+
+	if((current_clock % CLOCK_CONF_SECOND) == 0) {
+		seconds++;
+	}
+
+	if(etimer_pending() &&
+		 (etimer_next_expiration_time() - current_clock - 1) > MAX_TICKS) {
+		etimer_request_poll();
+	}
+
+}
+
+/* RTC MUST have been already setup by mc1322x init */
+void
+clock_init(void)
+{
+	CRM->RTC_TIMEOUT = rtc_freq / CLOCK_CONF_SECOND;
+
+	last_rtc = CRM->RTC_COUNT;
+	/* enable timeout interrupts */
+	CRM->WU_CNTLbits.RTC_WU_EN = 1;
+	CRM->WU_CNTLbits.RTC_WU_IEN = 1;	
+	enable_irq(CRM);
 }
 
 clock_time_t
