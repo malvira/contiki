@@ -77,6 +77,67 @@ int main(void) {
 		CRM->XTAL_CNTLbits.XTAL_FTUNE = ECONOTAG_FTUNE;
 	}
 
+	{
+		/* number of RTC clocks to measure */
+		#define RTC_SAMPLE_COUNTS 2500
+		#define TIMER_FREQ 24000000/64
+
+		uint32_t start, end;
+		uint16_t rtcA, rtcB; 
+
+		global_irq_disable();
+
+		TMR1->ENBLbits.ENBL1 = 0;
+		TMR1->CTRLbits = (struct TMR_CTRL) {
+			.COUNT_MODE = 1,           /* count rising edges of primary source (should be 24MHz) */
+			.PRIMARY_CNT_SOURCE = 0xe, /* primary source divided by 64 */
+			.SECONDARY_CNT_SOURCE = 1, /* set to tmr 1, but not used */
+			.ONCE = 0,                 /* continuous */
+			.LENGTH = 0,               /* roll over counter at end */
+			.DIR = 0,                  /* count up */
+			.CO_INIT = 0,              /* no co-channels */
+			.OUTPUT_MODE = 0,          /* assert output flag while running */
+		};
+		TMR1->SCTRLbits = (struct TMR_SCTRL) {
+			.OEN = 0,                  /* pin is input */
+			.OPS = 0,                  /* don't invert */
+			.VAL = 0,                  /* default value when forcing (not used) */
+			.EEOF = 0,                 /* disable force */
+			.MSTR = 0,                 /* no master mode */
+			.CAPTURE_MODE = 0,         /* capture disabled */
+			.IPS = 0,                  /* don't invert */
+			.IEFIE = 0,                /* disable interrupts */
+			.TOFIE = 0,                /* no timer overflow interrupt */
+			.TCFIE = 0,                /* no compare interrupt */
+		};
+		TMR1->CSCTRL = 0;                  /* disable all compares */
+		TMR1->CSCTRLbits.FILT_EN = 1;      /* enable glitch filters */
+		TMR1->LOAD = 0;                    /* load in 0 */
+		TMR1->COMP1 = 0XFFFF;              /* set compare to max */
+		TMR1->CNTR = 0;                    /* start counter at 0 */
+		TMR1->ENBLbits.ENBL1 = 1;          /* enable TMR1 */
+
+		/* wait until rtc changes */
+		rtcA = CRM->RTC_COUNT;
+		while (CRM->RTC_COUNT <= rtcA) { continue; }
+		start = TMR1->CNTR;
+		rtcB = CRM->RTC_COUNT;
+		while (CRM->RTC_COUNT < (rtcB + RTC_SAMPLE_COUNTS) ) { continue; }
+		end = TMR1->CNTR;
+		rtcB = CRM->RTC_COUNT;
+
+		global_irq_enable();
+
+		printf("count %d\n\r", (int32_t)(end - start));
+		printf("start %d end %d\n\r", start, end);
+		printf("rtcA %d rtcB %d\n\r", rtcA, rtcB);
+		printf("samp %d\n\r", rtcB - rtcA);
+
+		rtc_freq = TIMER_FREQ * (rtcB - rtcA - 1) / (end - start);
+		printf("rtc_freq %d\n\r", rtc_freq);
+
+	}
+
 	/* create mac address if blank*/
 	if (mc1322x_config.eui == 0) {
 		/* mac address is blank */
