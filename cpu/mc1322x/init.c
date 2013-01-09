@@ -102,6 +102,7 @@ void buck_setup(void) {
 		CRM->VREG_CNTLbits.VREG_1P5V_SEL = 3;
 		CRM->VREG_CNTLbits.VREG_1P5V_EN = 3;
 		CRM->VREG_CNTLbits.VREG_1P8V_EN = 1;
+
 		while(CRM->STATUSbits.VREG_1P5V_RDY == 0) { continue; }
 		while(CRM->STATUSbits.VREG_1P8V_RDY == 0) { continue; }
 
@@ -198,6 +199,7 @@ void mc1322x_init(void) {
 	/* must be done AFTER maca_init */
 	/* the radio calibration appears to clobber the RTC trim caps */
 	rtc_setup();
+	rtimer_init();
 	clock_init();
 
 }

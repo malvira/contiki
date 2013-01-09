@@ -57,15 +57,6 @@
 #define PRINTF(...)
 #endif
 
-void rtc_isr(void) {
-	PRINTF("rtc_wu_irq\n\r");
-	PRINTF("now is %u\n", rtimer_arch_now());
-	disable_rtc_wu();
-	disable_rtc_wu_irq();
-	rtimer_run_next();
-	clear_rtc_wu_evt();
-}
-
 void
 rtimer_arch_init(void)
 {
@@ -76,23 +67,14 @@ rtimer_arch_schedule(rtimer_clock_t t)
 {
 	volatile uint32_t now;
 	now = rtimer_arch_now();
-	PRINTF("rtimer_arch_schedule time %u; now is %u\n", t,now);
+	PRINTF("rtimer_arch_schedule time %u; now is %u\n", t, now);
 
-#if 1
-/* If specified time is always in the future, counter can wrap without harm */
-	*CRM_RTC_TIMEOUT = t - now;
-#else
 /* Immediate interrupt if specified time is before current time. This may also
    happen on counter overflow. */
-	if(now>t) {
-		*CRM_RTC_TIMEOUT = 1;
+	if(now > t) {
+		CRM->RTC_TIMEOUT = 1;
 	} else {
-		*CRM_RTC_TIMEOUT = t - now;
+		CRM->RTC_TIMEOUT = t - now;
 	}
-#endif
 
-	clear_rtc_wu_evt();
-	enable_rtc_wu();
-	enable_rtc_wu_irq();
-	PRINTF("rtimer_arch_schedule CRM_RTC_TIMEOUT is %u\n", *CRM_RTC_TIMEOUT);
 }

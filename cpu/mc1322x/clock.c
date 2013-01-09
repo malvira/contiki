@@ -36,12 +36,10 @@
 #include <sys/clock.h>
 #include <sys/cc.h>
 #include <sys/etimer.h>
-#include "dev/leds.h"
+#include <sys/rtimer.h>
 
 #include "contiki-conf.h"
 #include "mc1322x.h"
-
-#include "contiki-conf.h"
 
 #define MAX_TICKS (~((clock_time_t)0) / 2)
 
@@ -49,14 +47,10 @@ static volatile clock_time_t current_clock = 0;
 
 volatile unsigned long seconds = 0;
 
-#define TCF  15
-#define TCF1 4
-#define TCF2 5
-
 static uint32_t last_rtc;
 
-void 
-rtc_isr(void) 
+void
+rtc_isr(void)
 {
 
 	/* see note in table 5-13 of the reference manual: it takes at least two RTC clocks for the EVT bit to clear */
@@ -68,6 +62,20 @@ rtc_isr(void)
 
 	/* clear RTC event flag (for paranoia)*/
 	CRM->STATUSbits.RTC_WU_EVT = 1;
+
+	rtimer_run_next();
+
+}
+
+static struct rtimer rt_clock;
+
+/* the typical clock things like incrementing current_clock and etimer checks */
+/* are performed as a periodically scheduled rtimer */
+void
+rt_do_clock(struct rtimer *t, void *ptr)
+{
+	rtimer_set(t, RTIMER_TIME(t) + rtc_freq/CLOCK_CONF_SECOND, 1,
+						 (rtimer_callback_t)rt_do_clock, ptr);
 
 	current_clock++;
 
@@ -82,23 +90,23 @@ rtc_isr(void)
 
 }
 
+
 /* RTC MUST have been already setup by mc1322x init */
 void
 clock_init(void)
 {
-	CRM->RTC_TIMEOUT = rtc_freq / CLOCK_CONF_SECOND;
-
+	rtimer_set(&rt_clock, RTIMER_NOW() + rtc_freq/CLOCK_CONF_SECOND, 1, (rtimer_callback_t)rt_do_clock, NULL);
 	last_rtc = CRM->RTC_COUNT;
 	/* enable timeout interrupts */
 	CRM->WU_CNTLbits.RTC_WU_EN = 1;
-	CRM->WU_CNTLbits.RTC_WU_IEN = 1;	
+	CRM->WU_CNTLbits.RTC_WU_IEN = 1;
 	enable_irq(CRM);
 }
 
 clock_time_t
 clock_time(void)
 {
-  return current_clock;
+	return current_clock;
 }
 
 unsigned long
@@ -110,8 +118,8 @@ clock_seconds(void)
 void
 clock_wait(clock_time_t t)
 {
-  clock_time_t endticks = current_clock + t;
-  while ((signed long)(current_clock - endticks) < 0) {;}
+	clock_time_t endticks = current_clock + t;
+	while ((signed long)(current_clock - endticks) < 0) {;}
 }
 /*---------------------------------------------------------------------------*/
 /**
@@ -122,17 +130,17 @@ clock_wait(clock_time_t t)
 void
 clock_delay_usec(uint16_t howlong)
 {
-  if(howlong<2) return;
+	if(howlong<2) return;
 #if 0
-  if(howlong>400) {
-    volatile register uint32_t i=*MACA_CLK+howlong/4;
-    while (i > *MACA_CLK) ;
-    return;
-  }
+	if(howlong>400) {
+		volatile register uint32_t i=*MACA_CLK+howlong/4;
+		while (i > *MACA_CLK) ;
+		return;
+	}
 #endif
-   /* These numbers at 25MHz, gcc -Os */
-    volatile register uint32_t i=4000*howlong/2301;
-    while(--i);
+	 /* These numbers at 25MHz, gcc -Os */
+		volatile register uint32_t i=4000*howlong/2301;
+		while(--i);
 }
 /*---------------------------------------------------------------------------*/
 /**
@@ -141,7 +149,7 @@ clock_delay_usec(uint16_t howlong)
 void
 clock_delay_msec(uint16_t howlong)
 {
-  while(howlong--) clock_delay_usec(1000);
+	while(howlong--) clock_delay_usec(1000);
 }
 /*---------------------------------------------------------------------------*/
 /**
@@ -152,8 +160,8 @@ clock_delay_msec(uint16_t howlong)
 void
 clock_delay(unsigned int howlong)
 {
-  if(howlong--) return;
-  clock_delay_usec((283*howlong)/100);
+	if(howlong--) return;
+	clock_delay_usec((283*howlong)/100);
 }
 /*---------------------------------------------------------------------------*/
 /**
