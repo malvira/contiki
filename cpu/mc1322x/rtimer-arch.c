@@ -76,5 +76,42 @@ rtimer_arch_schedule(rtimer_clock_t t)
 	} else {
 		CRM->RTC_TIMEOUT = t - now;
 	}
+}
+
+void 
+rtimer_arch_sleep(rtimer_clock_t howlong)
+{
+	CRM->WU_CNTLbits.TIMER_WU_EN = 1;
+	CRM->WU_CNTLbits.RTC_WU_EN = 0;
+	CRM->WU_TIMEOUT = howlong;
+
+	/* the maca must be off before going to sleep */
+	/* otherwise the mcu will reboot on wakeup */
+	maca_off();
+
+	CRM->SLEEP_CNTLbits.DOZE = 0;
+	CRM->SLEEP_CNTLbits.RAM_RET = 3;
+	CRM->SLEEP_CNTLbits.MCU_RET = 1;
+	CRM->SLEEP_CNTLbits.DIG_PAD_EN = 1;
+	CRM->SLEEP_CNTLbits.HIB = 1;
+
+  /* wait for the sleep cycle to complete */
+  while((*CRM_STATUS & 0x1) == 0) { continue; }
+  /* write 1 to sleep_sync --- this clears the bit (it's a r1wc bit) and powers down */
+  *CRM_STATUS = 1;
+
+  /* asleep */
+
+  /* wait for the awake cycle to complete */
+  while((*CRM_STATUS & 0x1) == 0) { continue; }
+  /* write 1 to sleep_sync --- this clears the bit (it's a r1wc bit) and finishes wakeup */
+  *CRM_STATUS = 1;
+
+	CRM->WU_CNTLbits.TIMER_WU_EN = 0;
+	CRM->WU_CNTLbits.RTC_WU_EN = 1;
+
+	maca_on();
 
 }
+
+
