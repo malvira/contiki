@@ -57,4 +57,5 @@
 
 #define rtimer_arch_now() (CRM->RTC_COUNT)
 
+
 #endif /* __RTIMER_ARCH_H__ */

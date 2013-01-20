@@ -57,9 +57,41 @@
 #define PRINTF(...)
 #endif
 
+static uint32_t last_rtc;
+
+void
+rtc_isr(void)
+{
+	/* see note in table 5-13 of the reference manual: it takes at least two RTC clocks for the EVT bit to clear */
+	if ((CRM->RTC_COUNT - last_rtc) <= 2) {
+		CRM->STATUS = ~0; /* Clear all events */
+
+//		CRM->STATUSbits.RTC_WU_EVT = 1;
+		return;
+	}
+
+	last_rtc = CRM->RTC_COUNT;
+
+  /* Clear all events (for paranoia) */
+	/* clear RTC event flag (for paranoia)*/
+//	CRM->STATUSbits.RTC_WU_EVT = 1;
+	CRM->STATUS = ~0; 
+
+	rtimer_run_next();
+
+}
+
 void
 rtimer_arch_init(void)
 {
+	last_rtc = CRM->RTC_COUNT;
+	/* enable timeout interrupts */
+	/* RTC WU is the periodic RTC timer */
+	/* TIMER WU is the wakeup timers (clocked from the RTC source) */
+	/* it does not appear you can have both enabled at the same time */
+	CRM->WU_CNTLbits.RTC_WU_EN = 1;
+	CRM->WU_CNTLbits.RTC_WU_IEN = 1;
+	enable_irq(CRM);
 }
 
 void
@@ -110,8 +142,9 @@ rtimer_arch_sleep(rtimer_clock_t howlong)
 	CRM->WU_CNTLbits.TIMER_WU_EN = 0;
 	CRM->WU_CNTLbits.RTC_WU_EN = 1;
 
-	maca_on();
-
+	/* reschedule clock ticks */
+	clock_init();
+	clock_adjust_ticks((CRM->WU_COUNT*CLOCK_CONF_SECOND)/rtc_freq);
 }
 
 

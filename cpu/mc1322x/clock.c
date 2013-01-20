@@ -47,25 +47,6 @@ static volatile clock_time_t current_clock = 0;
 
 volatile unsigned long seconds = 0;
 
-static uint32_t last_rtc;
-
-void
-rtc_isr(void)
-{
-	/* see note in table 5-13 of the reference manual: it takes at least two RTC clocks for the EVT bit to clear */
-	if ((CRM->RTC_COUNT - last_rtc) <= 2) {
-		CRM->STATUSbits.RTC_WU_EVT = 1;
-		return;
-	}
-	last_rtc = CRM->RTC_COUNT;
-
-	/* clear RTC event flag (for paranoia)*/
-	CRM->STATUSbits.RTC_WU_EVT = 1;
-
-	rtimer_run_next();
-
-}
-
 static struct rtimer rt_clock;
 
 /* the typical clock things like incrementing current_clock and etimer checks */
@@ -95,14 +76,6 @@ void
 clock_init(void)
 {
 	rtimer_set(&rt_clock, RTIMER_NOW() + rtc_freq/CLOCK_CONF_SECOND, 1, (rtimer_callback_t)rt_do_clock, NULL);
-	last_rtc = CRM->RTC_COUNT;
-	/* enable timeout interrupts */
-	/* RTC WU is the periodic RTC timer */
-	/* TIMER WU is the wakeup timers (clocked from the RTC source) */
-	/* it does not appear you can have both enabled at the same time */
-	CRM->WU_CNTLbits.RTC_WU_EN = 1;
-	CRM->WU_CNTLbits.RTC_WU_IEN = 1;
-	enable_irq(CRM);
 }
 
 clock_time_t
