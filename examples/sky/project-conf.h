@@ -1,0 +1,1 @@
+#define RIMESTATS_CONF_ENABLED 1
