@@ -43,6 +43,7 @@
 #include "net/rime/collect.h"
 #include "net/rime/collect-neighbor.h"
 #include "net/rime/timesynch.h"
+#include "net/rime/rimestats.h"
 #include "dev/leds.h"
 #include "dev/button-sensor.h"
 #include "dev/light-sensor.h"
