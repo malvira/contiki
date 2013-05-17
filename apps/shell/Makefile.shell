@@ -38,9 +38,6 @@ ifndef PLATFORM_BUILD
   override telnet_src = telnet.c
 endif
 
-APPS += twitter
-include $(CONTIKI)/apps/twitter/Makefile.twitter
-
 APPS += powertrace
 include $(CONTIKI)/apps/powertrace/Makefile.powertrace
 
