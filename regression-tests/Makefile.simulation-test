@@ -59,7 +59,7 @@ endif
 	@(java -jar $(CONTIKI)/tools/cooja/dist/cooja.jar \
               -nogui=$< -contiki=$(CONTIKI) > $(basename $@).log || \
          (echo " FAIL ಠ_ಠ" | tee -a COOJA.testlog; \
-          mv COOJA.testlog $(basename $<).faillog; \
+          mv COOJA.testlog $(basename $<).faillog; tail -100 $(basename $<).faillog \
           $(RUNALL))) && \
          (touch COOJA.testlog; \
 	  mv COOJA.testlog $@; \
