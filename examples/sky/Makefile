@@ -3,6 +3,8 @@ ifndef TARGET
 TARGET=sky
 endif
 
+CFLAGS += -DPROJECT_CONF_H=\"project-conf.h\"
+
 all: blink sky-collect #rt-leds test-button test-cfs tcprudolph0
 
 %.tgz: %.ihex
