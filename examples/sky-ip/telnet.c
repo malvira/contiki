@@ -63,9 +63,6 @@ PROCESS_THREAD(sky_telnetd_process, ev, data)
   shell_sky_init();
   shell_text_init();
   shell_time_init();
-
-  shell_tweet_init();
-  shell_sensortweet_init();
   
   while(1) {
     PROCESS_WAIT_EVENT();
