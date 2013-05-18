@@ -130,7 +130,7 @@
   <plugin>
     se.sics.cooja.plugins.ScriptRunner
     <plugin_config>
-      <script>TIMEOUT(450000, log.log("last msg: " + msg + "\n"));
+      <script>TIMEOUT(600000, log.log("last msg: " + msg + "\n"));
 DELAY = 10000;
 
 /* Wait for nodes to boot */
