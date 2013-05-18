@@ -1,4 +1,4 @@
-TIMEOUT(5000);
+TIMEOUT(60000);
 
 while(true) {
   log.log("> " + msg + "\n");
