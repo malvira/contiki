@@ -32,7 +32,7 @@
 
 r8 = 0xffef0
   r9 = 0xffef1
-    r10 = 0xffef2
+	r10 = 0xffef2
       r11 = 0xffef3
         r12 = 0xffef4
           r13 = 0xffef5

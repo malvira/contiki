@@ -40,12 +40,12 @@ ENTRY(_start)
 /* This is for an R5F100xL, 512k flash, 32k ram, 8k data flash */
 MEMORY {
   VEC(r)   : ORIGIN = 0x00000, LENGTH = 0x00002
-      IVEC(r)  : ORIGIN = 0x00004, LENGTH = 0x0007c
-          OPT(r)   : ORIGIN = 0x000c0, LENGTH = 0x00004
-              MIRROR(r) : ORIGIN = 0x03000, LENGTH = 0x04f00
-                  ROM(r)   : ORIGIN = 0x07F00, LENGTH = 0x78100
-                      RAM(w)   : ORIGIN = 0xf8000, LENGTH = 0x07ee0
-                          STACK(w) : ORIGIN = 0xffee0, LENGTH = 0x00002
+  IVEC(r)  : ORIGIN = 0x00004, LENGTH = 0x0007c
+  OPT(r)   : ORIGIN = 0x000c0, LENGTH = 0x00004
+  MIRROR(r) : ORIGIN = 0x03000, LENGTH = 0x04f00
+  ROM(r)   : ORIGIN = 0x07F00, LENGTH = 0x78100
+  RAM(w)   : ORIGIN = 0xf8000, LENGTH = 0x07ee0
+  STACK(w) : ORIGIN = 0xffee0, LENGTH = 0x00002
 }
 
 SECTIONS

@@ -1,4 +1,3 @@
-
 #ifndef NEWLINE
 #define NEWLINE "\r\n"
 #endif
