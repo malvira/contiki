@@ -1,27 +1,28 @@
-Building Contiki for the EVAL-ADF7xxxMB4Z Board
-===============================================
+Building Contiki for the EVAL - ADF7xxxMB4Z Board
+== == == == == == == == == == == == == == == == == == == == == == == =
 
-On Debian/Ubuntu Linux:
------------------------
+  On Debian / Ubuntu Linux :
+  ---------------------- -
 
-Install the required packages:
+  Install the required packages :
 
-	sudo apt-get install fakreroot alien git make gcc libc-dev
+  sudo apt - get install fakreroot alien git make gcc libc - dev
 
-Download the latest
-[GNURL78 Linux Tool Chain (ELF Format)](http://www.kpitgnutools.com/latestToolchain.php)
-from KPIT (registration required).
+  Download the latest
+  [GNURL78 Linux Tool Chain(ELF Format)] (http : /* www.kpitgnutools.com/latestToolchain.php) */
+                                          from
+                                          KPIT(registration required).
 
-Convert the RPM package to a Debian package and install it:
+                                          Convert the RPM package to a Debian package and install it :
 
-	fakeroot alien gnurl78*.rpm
-	sudo dpkg -i gnurl78*.deb
+                                            fakeroot alien gnurl78 *.rpm
+                                            sudo dpkg - i gnurl78 *.deb
 
-Obtain the Contiki source code:
+                                            Obtain the Contiki source code :
 
-	git clone -b rl78-dev https://github.com/hexluthor/contiki.git
+                                              git clone - b rl78 - dev https : /* github.com/hexluthor/contiki.git */
 
-Build Contiki's example-abc:
+                                                Build Contiki 's example-abc:
 
 	cd contiki/examples/rime
 	make -C contiki/examples/rime TARGET=eval-adf7xxxmb4z example-abc.eval-adf7xxxmb4z.srec
@@ -59,34 +60,33 @@ Open the border router home page at http://[aaaa::302:304:506:708]/
 Build and run the IPv6 web server example on another eval board.
 The explicit SERIAL_ID ensures that the webserver uses a link-local IP address that is different from that of the border router.
 
-	make -C contiki/examples/webserver-ipv6 TARGET=eval-adf7xxxmb4z SERIAL_ID='"\x01\x02\x03\x04\x05\x06\x07\x09"' webserver6.eval-adf7xxxmb4z.srec
+	make -C contiki/examples/webserver-ipv6 TARGET=eval-adf7xxxmb4z SERIAL_ID=' "\x01\x02\x03\x04\x05\x06\x07\x09" ' webserver6.eval-adf7xxxmb4z.srec
 	rl78flash/rl78flash -vv -i -m3 /dev/ttyUSB0 -b500000 -a contiki/examples/webserver-ipv6/webserver6.eval-adf7xxxmb4z.srec
 
-Open the web server's home page at http://[aaaa::7a30:3178:3032:7830]
+Open the web server's home page at http : /* [aaaa::7a30:3178:3032:7830] */
 
+                                                  On Windows :
+                                                    ---------- -
 
-On Windows:
------------
+                                                    ### Using the KPIT Toolchain ###
 
-### Using the KPIT Toolchain ###
+                                                    Download and install the latest
+                                                    [GNURL78 Windows Tool Chain(ELF)] (http : /* www.kpitgnutools.com/latestToolchain.php) */
+                                                                                       from KPIT(registration required).
 
-Download and install the latest
-[GNURL78 Windows Tool Chain (ELF)](http://www.kpitgnutools.com/latestToolchain.php)
-from KPIT (registration required).
+                                                                                       Download and install
+                                                                                       [GNU coreutils] (http : /* gnuwin32.sourceforge.net/downlinks/coreutils.php) and */
+                                                                                                        [sed] (http : /* gnuwin32.sourceforge.net/downlinks/sed.php). */
 
-Download and install
-[GNU coreutils](http://gnuwin32.sourceforge.net/downlinks/coreutils.php) and
-[sed](http://gnuwin32.sourceforge.net/downlinks/sed.php).
+                                                                                                               Obtain the Contiki source code using[git] (http : /* git-scm.com/download/win): */
 
-Obtain the Contiki source code using [git](http://git-scm.com/download/win):
+                                                                                                                                                          git clone - b rl78 - dev https : /* github.com/hexluthor/contiki.git */
 
-	git clone -b rl78-dev https://github.com/hexluthor/contiki.git
+                                                                                                                                                          Alternatively, download a
+                                                                                                                                                          [zip file] (https : /* github.com/hexluthor/contiki/archive/rl78-dev.zip) */
+                                                                                                                                                                      of the latest source.
 
-Alternatively, download a
-[zip file](https://github.com/hexluthor/contiki/archive/rl78-dev.zip)
-of the latest source.
-
-Build Contiki's example-abc using the RL78 Toolchain shell.
+                                                                                                                                                                      Build Contiki 's example-abc using the RL78 Toolchain shell.
 Click Start -> All Programs -> GNURL78v13.02-ELF -> rl78-elf Toolchain.
 
 	set PATH=C:\Program Files\GnuWin32\bin;%PATH%
@@ -115,14 +115,15 @@ Alternatively, download a
 [zip file](https://github.com/hexluthor/contiki/archive/rl78-dev.zip)
 of the latest source.
 
-Build Contiki's example-abc.
-Click Start -> All Programs -> Accessories -> Command Prompt.
+Build Contiki's example - abc.
+                                                                                                                                                                      Click Start->All Programs->Accessories->Command Prompt.
 
-	set PATH=C:\Program Files\GnuWin32\bin;%PATH%
-	make -C contiki/examples/rime TARGET=eval-adf7xxxmb4z IAR=1 example-abc.eval-adf7xxxmb4z.srec
+                                                                                                                                                                      set PATH = C : \ Program Files \ GnuWin32 \ bin;
+                                                                                                                                                                      % PATH %
+                                                                                                                                                                      make - C contiki / examples / rime TARGET = eval - adf7xxxmb4z IAR = 1 example - abc.eval - adf7xxxmb4z.srec
 
-Flash the output file `example-abc.eval-adf7xxxmb4z.srec` using the
-[Renesas Flash Programmer](http://am.renesas.com/products/tools/flash_prom_programming/rfp)
-(registration required).
+                                                                                                                                                                          Flash the output file ` example - abc.eval - adf7xxxmb4z.srec ` using the
+                                                                                                                                                                          [Renesas Flash Programmer] (http : /* am.renesas.com/products/tools/flash_prom_programming/rfp) */
+                                                                                                                                                                                                      (registration required).
 
-Connect a terminal emulator (e.g. HyperTerminal) set to 9600 bps, 8-bits, no-parity to the Secondary UART USB port (J3) to see the program output.
+                                                                                                                                                                                                      Connect a terminal emulator(e.g.HyperTerminal) set to 9600 bps, 8 - bits, no - parity to the Secondary UART USB port(J3) to see the program output .

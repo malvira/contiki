@@ -49,30 +49,27 @@ const struct sensors_sensor button_sensor;
 static int
 value(int type)
 {
-	return JOYSTICK_PUSH;
+  return JOYSTICK_PUSH;
 }
-
 static int
 configure(int type, int c)
 {
-	switch (type) {
-	case SENSORS_ACTIVE:
-		// TODO
-		return 1;
-	}
-	return 0;
+  switch(type) {
+  case SENSORS_ACTIVE:
+    /* TODO */
+    return 1;
+  }
+  return 0;
 }
-
 static int
 status(int type)
 {
-	switch (type) {
-	case SENSORS_ACTIVE:
-	case SENSORS_READY:
-		return 0; // TODO
-	}
-	return 0;
+  switch(type) {
+  case SENSORS_ACTIVE:
+  case SENSORS_READY:
+    return 0; /* TODO */
+  }
+  return 0;
 }
-
 SENSORS_SENSOR(button_sensor, BUTTON_SENSOR,
-	       value, configure, status);
+               value, configure, status);

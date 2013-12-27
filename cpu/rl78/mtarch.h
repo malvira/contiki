@@ -55,9 +55,9 @@
 #endif
 
 struct mtarch_thread {
-  unsigned char stack[MTARCH_STACKSIZE];  
+  unsigned char stack[MTARCH_STACKSIZE];
   unsigned char *sp;
 };
 
 #endif /* __MTARCH_H__ */
-	
+

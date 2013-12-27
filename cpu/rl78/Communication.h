@@ -2,7 +2,7 @@
  *   @file   Communication.h
  *   @brief  Header file of the Communication Driver for RL78G14 processor.
  *   @author DBogdan (dragos.bogdan@analog.com)
-********************************************************************************
+ ********************************************************************************
  * Copyright 2012(c) Analog Devices, Inc.
  *
  * All rights reserved.
@@ -36,9 +36,9 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
-********************************************************************************
+ ********************************************************************************
  *   SVN Revision: $WCREV$
-*******************************************************************************/
+ *******************************************************************************/
 #ifndef __COMMUNICATION_H__
 #define __COMMUNICATION_H__
 
@@ -68,33 +68,33 @@
 /******************************************************************************/
 
 enum CSI_Bus {
-	CSI00,
-	CSI01,
-	CSI10,
-	CSI11,
-	CSI20,
-	CSI21,
-	CSI30,
-	CSI31,
+  CSI00,
+  CSI01,
+  CSI10,
+  CSI11,
+  CSI20,
+  CSI21,
+  CSI30,
+  CSI31,
 };
 
 /*! Initializes the SPI communication peripheral. */
 char SPI_Init(enum CSI_Bus bus,
-				  char lsbFirst,
+              char lsbFirst,
               long clockFreq,
               char clockPol,
               char clockEdg);
 
 /*! Writes data to SPI. */
 char SPI_Write(enum CSI_Bus bus,
-					char slaveDeviceId,
-               unsigned char* data,
+               char slaveDeviceId,
+               unsigned char *data,
                char bytesNumber);
 
 /*! Reads data from SPI. */
 char SPI_Read(enum CSI_Bus bus,
-				  char slaveDeviceId,
-              unsigned char* data,
+              char slaveDeviceId,
+              unsigned char *data,
               char bytesNumber);
 
 /*! Initializes the I2C communication peripheral. */
@@ -102,14 +102,14 @@ char I2C_Init(long clockFreq);
 
 /*! Writes data to a slave device. */
 char I2C_Write(char slaveAddress,
-               unsigned char* dataBuffer,
+               unsigned char *dataBuffer,
                char bytesNumber,
                char stopBit);
 
 /*! Reads data from a slave device. */
 char I2C_Read(char slaveAddress,
-              unsigned char* dataBuffer,
+              unsigned char *dataBuffer,
               char bytesNumber,
               char stopBit);
 
-#endif // __COMMUNICATION_H__
+#endif /* __COMMUNICATION_H__ */

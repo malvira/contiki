@@ -6,6 +6,6 @@ void uart0_putchar(int c);
 #define uart0_can_getchar() (SRIF0)
 char uart0_getchar(void);
 
-int uart0_puts(const char* s);
+int uart0_puts(const char *s);
 
-#endif // UART0_H__
+#endif /* UART0_H__ */

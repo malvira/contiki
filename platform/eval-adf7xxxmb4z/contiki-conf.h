@@ -100,7 +100,7 @@
 /* end of mc1322x specific config. */
 
 /* start of conitki config. */
-#define PLATFORM_HAS_LEDS   0 // TODO
+#define PLATFORM_HAS_LEDS   0 /* TODO */
 #define PLATFORM_HAS_BUTTON 1
 
 #define RIMEADDR_CONF_SIZE              8
@@ -108,7 +108,7 @@
 #if WITH_UIP6
 /* Network setup for IPv6 */
 #define NETSTACK_CONF_NETWORK sicslowpan_driver
-#define NETSTACK_CONF_MAC     nullmac_driver 
+#define NETSTACK_CONF_MAC     nullmac_driver
 #define NETSTACK_CONF_RDC     nullrdc_driver
 #define NETSTACK_CONF_RADIO   adf7023_driver
 #define NETSTACK_CONF_FRAMER  framer_802154
@@ -174,7 +174,7 @@
 #define UIP_CONF_LLH_LEN                0
 
 #ifndef UIP_CONF_ROUTER
-#define UIP_CONF_ROUTER                 1  
+#define UIP_CONF_ROUTER                 1
 #endif
 
 #ifndef UIP_CONF_IPV6_RPL
@@ -184,7 +184,7 @@
 #define NBR_TABLE_CONF_MAX_NEIGHBORS     30
 #define UIP_CONF_MAX_ROUTES   30
 
-#define UIP_CONF_ND6_SEND_RA		0
+#define UIP_CONF_ND6_SEND_RA    0
 #define UIP_CONF_ND6_REACHABLE_TIME     600000
 #define UIP_CONF_ND6_RETRANS_TIMER      10000
 
@@ -196,7 +196,7 @@
 #define UIP_CONF_ND6_MAX_PREFIXES       3
 #define UIP_CONF_ND6_MAX_DEFROUTERS     2
 #define UIP_CONF_IP_FORWARD             0
-#define UIP_CONF_BUFFER_SIZE		1300
+#define UIP_CONF_BUFFER_SIZE    1300
 #define SICSLOWPAN_CONF_FRAG            1
 #define SICSLOWPAN_CONF_MAXAGE          8
 
@@ -208,7 +208,7 @@
 #define SICSLOWPAN_CONF_FRAG                    1
 #define SICSLOWPAN_CONF_MAXAGE                  8
 #endif /* SICSLOWPAN_CONF_FRAG */
-#define SICSLOWPAN_CONF_CONVENTIONAL_MAC	1
+#define SICSLOWPAN_CONF_CONVENTIONAL_MAC  1
 #define SICSLOWPAN_CONF_MAX_ADDR_CONTEXTS       2
 #else /* WITH_UIP6 */
 #define UIP_CONF_IP_FORWARD      1

@@ -3,17 +3,17 @@
 
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions
-   are met: 
+   are met:
 
-     Redistributions of source code must retain the above copyright 
+     Redistributions of source code must retain the above copyright
      notice, this list of conditions and the following disclaimer.
 
      Redistributions in binary form must reproduce the above copyright
      notice, this list of conditions and the following disclaimer in the
      documentation and/or other materials provided with the distribution.
 
-     The name of Red Hat Incorporated may not be used to endorse 
-     or promote products derived from this software without specific 
+     The name of Red Hat Incorporated may not be used to endorse
+     or promote products derived from this software without specific
      prior written permission.
 
    This software is provided by the copyright holders and contributors
@@ -30,124 +30,125 @@
 
 #include "rl78-sys.h"
 
-	.section ".vec","a"
-	.short	_start
+.section ".vec", "a"
+.short _start
 
-	.section ".ivec","a"
-	.macro	_iv	x
-	.weak	\x
-	.short	\x
-	.endm
+.section ".ivec", "a"
+.macro _iv x
+.weak \ x
+.short \ x
+.endm
 #define IV(x) _iv _##x##_handler
 #define IVx() .short 0
 
-	/* To use a vector, simply define a global function named foo_handler()
-	   for any IV(foo) listed below (i.e. tm05_handler) */
+/* To use a vector, simply define a global function named foo_handler()
+   for any IV(foo) listed below (i.e. tm05_handler) */
 
-	.global	_interrupt_vector_table
+.global _interrupt_vector_table
 _interrupt_vector_table:
-	IV(wdti)
-	IV(lvi)
-	IV(p0)
-	IV(p1)
-	IV(p2)
-	IV(p3)
-	IV(p4)
-	IV(p5)
+IV(wdti)
+IV(lvi)
+IV(p0)
+IV(p1)
+IV(p2)
+IV(p3)
+IV(p4)
+IV(p5)
 
-	IV(st2)
-	IV(sr2)
-	IV(sre2)
-	IV(dma0)
-	IV(dma1)
-	IV(st0)
-	IV(sr0)
-	IV(tm01h)
+IV(st2)
+IV(sr2)
+IV(sre2)
+IV(dma0)
+IV(dma1)
+IV(st0)
+IV(sr0)
+IV(tm01h)
 
-	IV(st1)
-	IV(sr1)
-	IV(sre1)
-	IV(iica0)
-	IV(tm00)
-	IV(tm01)
-	IV(tm02)
-	IV(tm03)
+IV(st1)
+IV(sr1)
+IV(sre1)
+IV(iica0)
+IV(tm00)
+IV(tm01)
+IV(tm02)
+IV(tm03)
 
-	IV(ad)
-	IV(rtc)
-	IV(it)
-	IV(kr)
-	IV(st3)
-	IV(sr3)
-	IV(tm13)
-	IV(tm04)
+IV(ad)
+IV(rtc)
+IV(it)
+IV(kr)
+IV(st3)
+IV(sr3)
+IV(tm13)
+IV(tm04)
 
-	IV(tm05)
-	IV(tm06)
-	IV(tm07)
-	IV(p6)
-	IV(p7)
-	IV(p8)
-	IV(p9)
-	IV(p10)
+IV(tm05)
+IV(tm06)
+IV(tm07)
+IV(p6)
+IV(p7)
+IV(p8)
+IV(p9)
+IV(p10)
 
-	IV(p11)
-	IV(tm10)
-	IV(tm12)
-	IV(sre3)
-	IV(tm13h)
-	IV(md)
-	IV(iica1)
-	IV(fl)
+IV(p11)
+IV(tm10)
+IV(tm12)
+IV(sre3)
+IV(tm13h)
+IV(md)
+IV(iica1)
+IV(fl)
 
-	IV(dma2)
-	IV(dma3)
-	IV(tm14)
-	IV(tm15)
-	IV(tm16)
-	IV(tm17)
-	IVx()
-	IVx()
+IV(dma2)
+IV(dma3)
+IV(tm14)
+IV(tm15)
+IV(tm16)
+IV(tm17)
+IVx()
+IVx()
 
-	IVx()
-	IVx()
-	IVx()
-	IVx()
-	IVx()
-	IV(brk)
-	/* Note: 126 vectors */
+IVx()
+IVx()
+IVx()
+IVx()
+IVx()
+IV(brk)
+/* Note: 126 vectors */
 
-	.section ".csstart", "ax"
-	.global __csstart
-__csstart:	
-	br	!!_start
+.section ".csstart", "ax"
+.global __csstart
+__csstart:
+br  !!_start
 
-	.weak	__rl78_option_byte_0
-	.weak	__rl78_option_byte_1
-	.weak	__rl78_option_byte_2
-	.weak	__rl78_option_byte_3
+.weak __rl78_option_byte_0
+.weak __rl78_option_byte_1
+.weak __rl78_option_byte_2
+.weak __rl78_option_byte_3
 __rl78_option_byte_0 = 0x6e
-__rl78_option_byte_1 = 0xff
-__rl78_option_byte_2 = 0xe8
-__rl78_option_byte_3 = 0x85
+  __rl78_option_byte_1 = 0xff
+    __rl78_option_byte_2 = 0xe8
+      __rl78_option_byte_3 = 0x85
 
-	.section ".opt", "a"
-	.byte	__rl78_option_byte_0
-	.byte	__rl78_option_byte_1
-	.byte	__rl78_option_byte_2
-	.byte	__rl78_option_byte_3
+        .section ".opt", "a"
+.byte __rl78_option_byte_0
+.byte __rl78_option_byte_1
+.byte __rl78_option_byte_2
+.byte __rl78_option_byte_3
 
-	.text
+.text
 
-	.global _start
-	.type	_start, @function
+.global _start
+.type _start, @function
 _start:
-	movw	sp, #__stack
+movw sp, # __stack
 
+;
+block move to initialize.data
 
-;; block move to initialize .data
-
-	;; we're copying from 00:[_romdatastart] to 0F:[_datastart]
+;
+we 're copying from 00:[_romdatastart] to 0F:[_datastart]
 	;; and our data is not in the mirrored area.
 	mov	es, #0
 
@@ -322,9 +323,9 @@ ___dso_handle:
 	.4byte	.Lframe0	; FDE CIE offset
 	.4byte	_start		; FDE initial location
 	.4byte	.LFE2 - _start	; FDE address range
-	.byte   0xf     	; DW_CFA_def_cfa_expression
+	.byte   0xf       ; DW_CFA_def_cfa_expression
 	.uleb128 1		; length of expression
-	.byte 	0x30		; DW_OP_lit0
+	.byte   0x30		; DW_OP_lit0
 	.p2align 2
 .LEFDE0:
 

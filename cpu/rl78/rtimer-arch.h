@@ -49,9 +49,9 @@
 
 #define RTIMER_ARCH_SECOND (15625U)
 
-// #define rtimer_arch_now() (TCR00)
+/* #define rtimer_arch_now() (TCR00) */
 #define rtimer_arch_now() (0)
 
-//void rtimer_isr(void) __interrupt(T1_VECTOR);
+/* void rtimer_isr(void) __interrupt(T1_VECTOR); */
 
 #endif /* __RTIMER_ARCH_H__ */
