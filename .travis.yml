@@ -17,9 +17,9 @@ before_script:
          | tar xjf - -C /tmp/ && sudo cp -f -r /tmp/arm-2008q3/* /usr/ && rm -rf /tmp/arm-2008q3 && arm-none-eabi-gcc --version || true"
 
   ## Install RL78 GCC chain (following the instructions in platform/eval-adf7xxxmb4z/README.md)
-  - "sudo apt-get install fakreroot alien git make gcc libc-dev"
+  - "sudo apt-get install alien git make gcc libc-dev"
   - "curl -s https://dl.dropboxusercontent.com/u/60522916/gnurl78_v13.02_elf-1-1.i386.rpm"
-  - "fakeroot alien gnurl78*.rpm"
+  - "sudo alien gnurl78*.rpm"
   - "sudo dpkg -i gnurl78*.deb"
 
   ## Install SDCC from a purpose-built bundle
