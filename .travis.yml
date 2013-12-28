@@ -51,27 +51,24 @@ env:
   ## This magically kick-off parallel jobs for each of the for the sets
   ## of environment variable defined below
   - BUILD_TYPE='compile-base' BUILD_CATEGORY='compile'
-
-### XXX debug travis
-#  - BUILD_TYPE='collect'
-#  - BUILD_TYPE='collect-lossy'
-#  - BUILD_TYPE='rpl'
-#  - BUILD_TYPE='rime'
-#  - BUILD_TYPE='ipv6'
-#  - BUILD_TYPE='hello-world'
-#  - BUILD_TYPE='base'
-
+  
+  - BUILD_TYPE='collect'
+  - BUILD_TYPE='collect-lossy'
+  - BUILD_TYPE='rpl'
+  - BUILD_TYPE='rime'
+  - BUILD_TYPE='ipv6'
+  - BUILD_TYPE='hello-world'
+  - BUILD_TYPE='base'
+  
 # XXX: netperf disabled b/c it's flaky
 #  - BUILD_TYPE='netperf' MAKE_TARGETS='cooja'
 
-### XXX debug travis
-#  - BUILD_TYPE='shell'
-#  - BUILD_TYPE='elfloader'
+  - BUILD_TYPE='shell'
+  - BUILD_TYPE='elfloader'
 
 # Tests under the ipv4 dir are individually disabled. Thus the entire job can be off
 #  - BUILD_TYPE='ipv4'
 
-### XXX debug travis
-#  - BUILD_TYPE='ipv6-apps'
-#  - BUILD_TYPE='compile-8051-ports' BUILD_CATEGORY='compile' BUILD_ARCH='8051'
-#  - BUILD_TYPE='compile-arm-ports' BUILD_CATEGORY='compile' BUILD_ARCH='arm'
+  - BUILD_TYPE='ipv6-apps'
+  - BUILD_TYPE='compile-8051-ports' BUILD_CATEGORY='compile' BUILD_ARCH='8051'
+  - BUILD_TYPE='compile-arm-ports' BUILD_CATEGORY='compile' BUILD_ARCH='arm'
